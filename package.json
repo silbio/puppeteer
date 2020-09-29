@@ -1,0 +1,32 @@
+{
+  "name": "silb.io",
+  "version": "1.0.4",
+  "description": "Stand in Line Bot",
+  "main": "js/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "NODE_ENV=development node --trace-warnings ./js/main",
+    "startProd": "NODE_ENV=production node ./js/main"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UviFarchi/silb.git"
+  },
+  "keywords": [
+    "Turn"
+  ],
+  "author": "Uvi",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/UviFarchi/silb/issues"
+  },
+  "homepage": "https://github.com/UviFarchi/silb#readme",
+  "dependencies": {
+    "axios": "^0.20.0",
+    "googleapis": "^60.0.1",
+    "puppeteer": "^5.3.1",
+    "puppeteer-extra": "^3.1.15",
+    "puppeteer-extra-plugin-stealth": "^2.6.1",
+    "uuid": "^8.3.0"
+  }
+}

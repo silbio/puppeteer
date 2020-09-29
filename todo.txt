@@ -1,0 +1,5 @@
+TODO => Assign phone number from pool to contact, create node route to accept forwarded sms. Figure out how to separate the codes according to their session (perhaps by time stamps)
+TODO => Spin off AWS server in Spain with dynamic IP
+TODO => Implement logging structure for errors with full stage and path data.
+TODO => Probing system, organize data.records into arrays of process/province combos. Limit the amount of windows opened to one per province/process combo.
+TODO => Hitting system, Once one of the above has reached stage 7, the system should begin running all others with the same province/process combo in parallel for a limited number of tries, then go back to probing with one of each.
