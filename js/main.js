@@ -8,6 +8,13 @@ const {v4: uuidv4} = require('uuid');
 const path = require('path');
 const utils = require('./utils');
 
+//Cron
+const CronJob = require('cron').CronJob;
+const job = new CronJob('00 45 23 * * *', function() {
+    console.log('Cron job starting app!');
+}, null, true, 'Europe/Madrid');
+job.start();
+
 //Express
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -61,8 +68,14 @@ app.get('/', (req, res) => {
     logger.info('Home page hit!');
 })
 
-app.get('/', (req,res)=>{
-    re
+app.get('/start', (req,res)=>{
+    if(req.query.password === "kabalahMacarena") {
+        res.send('Starting SILB');
+        start();
+    }
+    else{
+        res.sendStatus(401);
+    }
 })
 
 app.post('/sms', (req, res) => {
@@ -91,50 +104,50 @@ let auth;
 
 //Get Initial data
 
-
-new Promise((resolve, reject) => {
-    getData.init()
-        .then((authToken) => {
-            logger.info('Data initialized correctly');
-            auth = authToken;
-            getData.populateDataMap(auth).then((data) => {
-                logger.debug(JSON.stringify(data));
-                resolve(data);
+function start(){
+    new Promise((resolve, reject) => {
+        getData.init()
+            .then((authToken) => {
+                logger.info('Data initialized correctly');
+                auth = authToken;
+                getData.populateDataMap(auth).then((data) => {
+                    logger.debug(JSON.stringify(data));
+                    resolve(data);
+                })
             })
-        })
-        .catch((err) => {
-            reject(err);
-        });
-}).then(async (records) => {
+            .catch((err) => {
+                reject(err);
+            });
+    }).then(async (records) => {
 
-    global.browser = await puppeteer.launch({headless: false});
-    global.userAgent = await browser.userAgent();
-    global.pages = {};
-    let probingProvincesProcesses = [];
-    let probingData = [];
-    let hittingData = {};
+        global.browser = await puppeteer.launch({headless: process.env.NODE_ENV !== 'development' ? true : false});
+        global.userAgent = await browser.userAgent();
+        global.pages = {};
+        let probingProvincesProcesses = [];
+        let probingData = [];
+        let hittingData = {};
 
-    records.forEach((record) => {
-        let processNumber = utils.getProcessEnumOrName(record.tipoTramite)
-        let combinedName = `${record.provincia} - ${processNumber}`;
-        if (probingProvincesProcesses.includes(combinedName)) {
-            if (hittingData.hasOwnProperty(combinedName)) {
-                hittingData[combinedName].push(record)
+        records.forEach((record) => {
+            let processNumber = utils.getProcessEnumOrName(record.tipoTramite)
+            let combinedName = `${record.provincia} - ${processNumber}`;
+            if (probingProvincesProcesses.includes(combinedName)) {
+                if (hittingData.hasOwnProperty(combinedName)) {
+                    hittingData[combinedName].push(record)
+                } else {
+                    hittingData[combinedName] = [record]
+                }
             } else {
-                hittingData[combinedName] = [record]
+                probingProvincesProcesses.push(combinedName);
+                probingData.push(record);
             }
-        } else {
-            probingProvincesProcesses.push(combinedName);
-            probingData.push(record);
-        }
+        });
+
+        await makePages(records);
+
+    }).catch((error) => {
+        logger.error(error);
     });
-
-    await makePages(records);
-
-}).catch((error) => {
-    logger.error(error);
-});
-
+}
 
 async function makePages(recordsForPages) {
     for (let i = 0; i < recordsForPages.length; i++) {

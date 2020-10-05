@@ -6833,3 +6833,39 @@
 * DEBUG 2020/10/05-22.33.35 /home/uvi/dev/silb/js/utils.js:126 Attempts to poll: 11
 * DEBUG 2020/10/05-22.33.35 /home/uvi/dev/silb/js/stages/stage_6.js:11 No appointment found, reloading 67999b8a-2a7a-497e-87da-bea93fa16415 - 1/10
 * DEBUG 2020/10/05-22.33.35 /home/uvi/dev/silb/js/stages/stage_4.js:45 Captcha Resolution Field Filled!
+* DEBUG 2020/10/05-23.37.12 /home/uvi/dev/silb/js/main.js:49 Logger ready!
+* INFO 2020/10/05-23.37.13 /home/uvi/dev/silb/js/main.js:94 Application starting!
+* INFO 2020/10/05-23.37.13 /home/uvi/dev/silb/js/main.js:91 SILB listening at http://localhost:3000
+* DEBUG 2020/10/05-23.38.09 /home/uvi/dev/silb/js/main.js:49 Logger ready!
+* INFO 2020/10/05-23.38.09 /home/uvi/dev/silb/js/main.js:94 Application starting!
+* INFO 2020/10/05-23.38.09 /home/uvi/dev/silb/js/main.js:91 SILB listening at http://localhost:3000
+* INFO 2020/10/05-23.38.49 /home/uvi/dev/silb/js/main.js:104 Data initialized correctly
+* DEBUG 2020/10/05-23.38.49 /home/uvi/dev/silb/js/main.js:107 [{"nombres":"Michael","apellido1":"Hizky","apellido2":"Shur","provincia":"Barcelona","tipoTramite":"POLICIA-CERTIFICADOS Y ASIGNACION NIE","tipoDocumento":"PASAPORTE","numeroDocumento":"23859565","nacionalidad":"ISRAEL","caducidadTarjeta":"","telefono":"644378714","email":"admin@silb.io","motivo":"","anoNacimiento":"","status":"sin comenzar","dataRow":2},{"nombres":"Maria","apellido1":"Zlotberg","apellido2":"","provincia":"Barcelona","tipoTramite":"POLICIA-TOMA DE HUELLAS (EXPEDICIÓN DE TARJETA) Y RENOVACIÓN DE TARJETA DE LARGA DURACIÓN","tipoDocumento":"N.I.E.","numeroDocumento":"Y6558966R","nacionalidad":"ISRAEL","caducidadTarjeta":"30/07/2020","telefono":"644354712","email":"admin@silb.io","motivo":"","anoNacimiento":"1994","status":"sin comenzar","dataRow":3},{"nombres":"Maayan","apellido1":"Mor","apellido2":"","provincia":"Barcelona","tipoTramite":"POLICIA-TOMA DE HUELLAS (EXPEDICIÓN DE TARJETA) Y RENOVACIÓN DE TARJETA DE LARGA DURACIÓN","tipoDocumento":"N.I.E.","numeroDocumento":"Y7395816L","nacionalidad":"ISRAEL","caducidadTarjeta":"","telefono":"644378714","email":"admin@silb.io","motivo":"","anoNacimiento":"","status":"sin comenzar","dataRow":4},{"nombres":"Orry","apellido1":"Sarfaty","apellido2":"","provincia":"Barcelona","tipoTramite":"POLICIA-TOMA DE HUELLAS (EXPEDICIÓN DE TARJETA) Y RENOVACIÓN DE TARJETA DE LARGA DURACIÓN","tipoDocumento":"N.I.E.","numeroDocumento":"Y2633199N","nacionalidad":"ISRAEL","caducidadTarjeta":"","telefono":"644354712","email":"admin@silb.io","motivo":"","anoNacimiento":"1977","status":"sin comenzar","dataRow":5},{"nombres":"Maya Sarah","apellido1":"Rozen","apellido2":"","provincia":"Barcelona","tipoTramite":"POLICIA-CERTIFICADOS Y ASIGNACION NIE","tipoDocumento":"PASAPORTE","numeroDocumento":"ER155913","nacionalidad":"ISRAEL","caducidadTarjeta":"","telefono":"644378714","email":"admin@silb.io","motivo":"","anoNacimiento":"","status":"sin comenzar","dataRow":6},{"nombres":"Oren","apellido1":"Gan","apellido2":"","provincia":"Barcelona","tipoTramite":"POLICIA-TOMA DE HUELLAS (EXPEDICIÓN DE TARJETA) Y RENOVACIÓN DE TARJETA DE LARGA DURACIÓN","tipoDocumento":"N.I.E.","numeroDocumento":"Y2463972L","nacionalidad":"ISRAEL","caducidadTarjeta":"","telefono":"644354712","email":"admin@silb.io","motivo":"","anoNacimiento":"","status":"sin comenzar","dataRow":7},{"nombres":"Elad","apellido1":"Tzuberi","apellido2":"","provincia":"Barcelona","tipoTramite":"POLICIA - RECOGIDA DE TARJETA DE IDENTIDAD DE EXTRANJERO (TIE)","tipoDocumento":"N.I.E.","numeroDocumento":"Y4515184E","nacionalidad":"ISRAEL","caducidadTarjeta":"","telefono":"644378714","email":"admin@silb.io","motivo":"","anoNacimiento":"","status":"sin comenzar","dataRow":8}]
+* INFO 2020/10/05-23.38.50 /home/uvi/dev/silb/js/main.js:153 pageId 0d6b9312-f2b5-4bf8-bc0d-401c6125c807 assigned to Michael
+* INFO 2020/10/05-23.38.50 /home/uvi/dev/silb/js/utils.js:52 Captcha for pageId: 0d6b9312-f2b5-4bf8-bc0d-401c6125c807 requested.
+* INFO 2020/10/05-23.38.50 /home/uvi/dev/silb/js/main.js:153 pageId 062a35be-3de3-466d-92f5-870acfe67bb5 assigned to Maria
+* INFO 2020/10/05-23.38.50 /home/uvi/dev/silb/js/utils.js:52 Captcha for pageId: 062a35be-3de3-466d-92f5-870acfe67bb5 requested.
+* INFO 2020/10/05-23.38.50 /home/uvi/dev/silb/js/main.js:153 pageId c55c40e7-7187-4ea2-9142-3be60077d276 assigned to Maayan
+* INFO 2020/10/05-23.38.50 /home/uvi/dev/silb/js/utils.js:52 Captcha for pageId: c55c40e7-7187-4ea2-9142-3be60077d276 requested.
+* DEBUG 2020/10/05-23.38.50 /home/uvi/dev/silb/js/utils.js:68 Captcha service for task Id: 174186451forpageId0d6b9312-f2b5-4bf8-bc0d-401c6125c807
+* DEBUG 2020/10/05-23.38.50 /home/uvi/dev/silb/js/utils.js:70 Polling for captcha solution started for pageId 0d6b9312-f2b5-4bf8-bc0d-401c6125c807
+* DEBUG 2020/10/05-23.38.50 /home/uvi/dev/silb/js/utils.js:68 Captcha service for task Id: 174186463forpageId062a35be-3de3-466d-92f5-870acfe67bb5
+* DEBUG 2020/10/05-23.38.50 /home/uvi/dev/silb/js/utils.js:70 Polling for captcha solution started for pageId 062a35be-3de3-466d-92f5-870acfe67bb5
+* INFO 2020/10/05-23.38.51 /home/uvi/dev/silb/js/main.js:153 pageId cd718370-7688-4f7e-947f-6f7c4c83f73e assigned to Orry
+* INFO 2020/10/05-23.38.51 /home/uvi/dev/silb/js/utils.js:52 Captcha for pageId: cd718370-7688-4f7e-947f-6f7c4c83f73e requested.
+* DEBUG 2020/10/05-23.38.51 /home/uvi/dev/silb/js/utils.js:68 Captcha service for task Id: 174186485forpageIdc55c40e7-7187-4ea2-9142-3be60077d276
+* DEBUG 2020/10/05-23.38.51 /home/uvi/dev/silb/js/utils.js:70 Polling for captcha solution started for pageId c55c40e7-7187-4ea2-9142-3be60077d276
+* DEBUG 2020/10/05-23.38.51 /home/uvi/dev/silb/js/utils.js:68 Captcha service for task Id: 174186514forpageIdcd718370-7688-4f7e-947f-6f7c4c83f73e
+* DEBUG 2020/10/05-23.38.51 /home/uvi/dev/silb/js/utils.js:70 Polling for captcha solution started for pageId cd718370-7688-4f7e-947f-6f7c4c83f73e
+* INFO 2020/10/05-23.38.51 /home/uvi/dev/silb/js/main.js:153 pageId 60f15325-34d0-4782-bc05-c2ed12ced586 assigned to Maya Sarah
+* INFO 2020/10/05-23.38.51 /home/uvi/dev/silb/js/utils.js:52 Captcha for pageId: 60f15325-34d0-4782-bc05-c2ed12ced586 requested.
+* DEBUG 2020/10/05-23.38.51 /home/uvi/dev/silb/js/utils.js:68 Captcha service for task Id: 174186550forpageId60f15325-34d0-4782-bc05-c2ed12ced586
+* DEBUG 2020/10/05-23.38.51 /home/uvi/dev/silb/js/utils.js:70 Polling for captcha solution started for pageId 60f15325-34d0-4782-bc05-c2ed12ced586
+* INFO 2020/10/05-23.38.51 /home/uvi/dev/silb/js/main.js:153 pageId bc755786-cfdd-427c-80a9-eb07070349d8 assigned to Oren
+* INFO 2020/10/05-23.38.51 /home/uvi/dev/silb/js/utils.js:52 Captcha for pageId: bc755786-cfdd-427c-80a9-eb07070349d8 requested.
+* DEBUG 2020/10/05-23.43.15 /home/uvi/dev/silb/js/main.js:56 Logger ready!
+* INFO 2020/10/05-23.43.16 /home/uvi/dev/silb/js/main.js:101 Application starting!
+* INFO 2020/10/05-23.43.16 /home/uvi/dev/silb/js/main.js:98 SILB listening at http://localhost:3000
+* DEBUG 2020/10/05-23.44.48 /home/uvi/dev/silb/js/main.js:56 Logger ready!
+* INFO 2020/10/05-23.44.49 /home/uvi/dev/silb/js/main.js:101 Application starting!
+* INFO 2020/10/05-23.44.49 /home/uvi/dev/silb/js/main.js:98 SILB listening at http://localhost:3000
