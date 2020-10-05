@@ -12,7 +12,7 @@ module.exports = {
                 await page.keyboard.type(record.motivo);
             }
             await page.click('#btnSiguiente');
-            resolve({msg: 'Stage 7 done!', reset: false});
+            resolve({msg: 'Stage 7 done!'});
 
         } catch (err) {
             reject(err);

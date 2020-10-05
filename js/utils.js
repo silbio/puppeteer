@@ -4,6 +4,42 @@ const antiCaptchaClientKey = '0024131b365903ca5f32c9b2b1baf9ed';
 let resolvedCaptchas = {}
 
 module.exports = {
+    getProcessEnumOrName: (processId) => {
+        const processes = {
+            0: 'POLICIA - RECOGIDA DE TARJETA DE IDENTIDAD DE EXTRANJERO (TIE)',
+            1: 'POLICIA- EXPEDICIÓN/RENOVACIÓN DE DOCUMENTOS DE SOLICITANTES DE ASILO',
+            2: 'POLICIA- SOLICITUD ASILO',
+            3: 'POLICIA-AUTORIZACIÓN DE REGRESO',
+            4: 'POLICIA-CARTA DE INVITACIÓN',
+            5: 'POLICIA-CERTIFICADO DE REGISTRO DE CIUDADANO DE LA U.E.',
+            6: 'POLICIA-CERTIFICADOS (DE RESIDENCIA, DE NO RESIDENCIA Y DE CONCORDANCIA)',
+            7: 'POLICIA-CERTIFICADOS UE',
+            8: 'POLICIA-CERTIFICADOS Y ASIGNACION NIE',
+            9: 'POLICIA-CERTIFICADOS Y ASIGNACION NIE (NO COMUNITARIOS)',
+            10: 'POLICÍA-EXP.TARJETA ASOCIADA AL ACUERDO DE RETIRADA CIUDADANOS BRITÁNICOS Y SUS FAMILIARES (BREXIT)',
+            11: 'POLICIA-TOMA DE HUELLAS (EXPEDICIÓN DE TARJETA) Y RENOVACIÓN DE TARJETA DE LARGA DURACIÓN',
+            12: 'SOLICITUD DE AUTORIZACIONES',
+            13: 'REGISTRO',
+            14: 'ASILO-OFICINA DE ASILO Y REFUGIO."nueva normalidad" Expedición/Renovación Documentos.C/Pradillo 40',
+            15: 'AUT. DE RESIDENCIA TEMPORAL POR CIRCUNS. EXCEPCIONALES POR ARRAIGO',
+            16: 'AUTORIZACIÓN DE RESIDENCIA DE MENORES',
+            17: 'AUTORIZACIÓN ESTANCIA INICIAL POR ESTUDIOS',
+            18: 'AUTORIZACIONES DE TRABAJO',
+            19: 'FAMILIARES DE RESIDENTES COMUNITARIOS',
+            20: 'INFORMACIÓN',
+            21: 'REAGRUPACIÓN FAMILIAR',
+            22: 'Recuperación de la autorización de larga duración'
+        }
+        if (typeof processId === 'number') {
+            return processes[processId];
+        } else {
+            for (var processNumber in processes) {
+                if (processes[processNumber] === processId) {
+                    return processNumber;
+                }
+            }
+        }
+    },
     getOptionValueFromInnerText: async (page, selectId, textToFind) => {
         const optionWanted = (
             await page.$x(`//*[@id = "${selectId}"]/option[text() = "${textToFind}"]`))[0];
@@ -12,48 +48,50 @@ module.exports = {
         ).jsonValue();
     },
     fetchCaptcha: (pageId) => {
-
-        axios.post('http://api.anti-captcha.com/createTask', {
-            'clientKey': antiCaptchaClientKey,
-            'task':
-                {
-                    'type': 'NoCaptchaTaskProxyless',
-                    'websiteURL': 'https://sede.administracionespublicas.gob.es/icpplustieb/acValidarEntrada',
-                    'websiteKey': '6Ld3FzoUAAAAANGzDQ-ZfwyAArWaG2Ae15CGxkKt',
-                    'userAgent': userAgent
-                }
-        })
-            .then((response) => {
-
-                let taskId = response.data.taskId
-                let errorId = response.data.errorId;
-                if (taskId) {
-                    console.log('Task Id: ' + taskId)
-                    new Promise((pollResolve, pollReject) => {
-                        console.log('polling started');
-                        pollTask(taskId, 0, pollResolve, pollReject)
-                    }).then((solvedCaptcha) => {
-                        resolvedCaptchas[pageId] = {
-                            code: solvedCaptcha, timestamp: new Date().getTime()
-                        };
-                        return true;
-                    }).catch((err) => {
-
-                        console.error(err);
-                        return false;
-                    });
-                } else if (errorId) {
-
-                    console.error(errorId, response.data.errorCode, response.data.errorDescription);
-                    return false;
-                }
-
+        return new Promise((resolve,reject)=>{
+            logger.info('Captcha for pageId: ' + pageId + ' requested.')
+            axios.post('http://api.anti-captcha.com/createTask', {
+                'clientKey': antiCaptchaClientKey,
+                'task':
+                    {
+                        'type': 'NoCaptchaTaskProxyless',
+                        'websiteURL': 'https://sede.administracionespublicas.gob.es/icpplustieb/acValidarEntrada',
+                        'websiteKey': '6Ld3FzoUAAAAANGzDQ-ZfwyAArWaG2Ae15CGxkKt',
+                        'userAgent': userAgent
+                    }
             })
-            .catch(error => {
+                .then((response) => {
 
-                console.error(error);
-                return false;
-            });
+                    let taskId = response.data.taskId
+                    let errorId = response.data.errorId;
+                    if (taskId) {
+                        logger.debug('Captcha service  task Id: ' + taskId)
+                        new Promise((pollResolve, pollReject) => {
+                            logger.debug('Polling for captcha solution started');
+                            pollTask(taskId, 0, pollResolve, pollReject)
+                        }).then((solvedCaptcha) => {
+                            resolvedCaptchas[pageId] = {
+                                code: solvedCaptcha, timestamp: new Date().getTime()
+                            };
+
+                        }).catch((err) => {
+
+                            reject({message: err, reset: true});
+
+                        });
+                    } else if (errorId) {
+                        reject({message: `${errorId} - 
+                        ${response.data.errorCode} -  
+                        ${response.data.errorDescription}`, reset: true});
+
+                    }
+
+                })
+                .catch(error => {
+
+                    reject({message:error, reset:true})
+                });
+        })
     },
     removeSolvedCaptcha(pageId) {
         delete resolvedCaptchas[pageId]
@@ -80,12 +118,12 @@ function pollTask(taskId, attempt, resolve, reject) {
         let gRecaptchaStatus = taskResponse.data.status
 
         if (gRecaptchaStatus === 'ready') {
-            console.log('reCaptcha solution ready.')
+            logger.info('reCaptcha solution ready.')
             resolve(taskResponse.data.solution.gRecaptchaResponse);
-        } else if (attempt > 20) {
+        } else if (attempt > 30) {
             reject('Too many polling tries');
         } else {
-            console.log('Attempts to poll: ' + attempt)
+            logger.debug('Attempts to poll: ' + attempt)
             attempt++;
             setTimeout(() => {
                 pollTask(taskId, attempt, resolve, reject);

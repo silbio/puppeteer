@@ -5,7 +5,7 @@ module.exports = {
             let enterBtn = '#btnEntrar';
             await page.waitForSelector(enterBtn);
             await page.click(enterBtn);
-           resolve({msg: 'Stage 3 done!', reset: false});
+           resolve({msg: 'Stage 3 done!'});
 
         } catch (err) {
             reject(err);

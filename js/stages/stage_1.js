@@ -11,7 +11,7 @@ module.exports = {
             let optionValue = await utils.getOptionValueFromInnerText(page, 'form', record.provincia);
             await page.select(`${provinces}`, optionValue);
             await page.click(btnAceptar);
-            resolve({msg: 'Stage 1 done!', reset: false});
+            resolve({msg: 'Stage 1 done!'});
 
 
         } catch (err) {

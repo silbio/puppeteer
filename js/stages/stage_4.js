@@ -1,11 +1,10 @@
 const utils = require('../utils');
 module.exports = {
-    async run(page, record, resolve, reject, pageId) {
+    run: async function (page, record, resolve, reject, pageId) {
         try {
-            //Send reCaptcha for solving
-
 
 //Document Type radio
+            await page.waitForSelector('[name="rdbTipoDoc"]')
             await page.click(`[name="rdbTipoDoc"][value="${record.tipoDocumento}"]`);
             // Document Number field
             await page.focus('#txtIdCitado');
@@ -14,11 +13,11 @@ module.exports = {
             await page.focus('#txtDesCitado');
             await page.keyboard.type(record.nombres + ' ' + record.apellido1 + ' ' + record.apellido2);
             //Country Select
-            if(await page.$('#txtPaisNac') !== null) {
+            if (await page.$('#txtPaisNac') !== null) {
                 let optionValue = await utils.getOptionValueFromInnerText(page, 'txtPaisNac', record.nacionalidad);
                 await page.select('#txtPaisNac', optionValue);
             }
-            if(await page.$('#txtAnnoCitado') !== null) {
+            if (await page.$('#txtAnnoCitado') !== null) {
                 await page.focus('#txtAnnoCitado');
                 await page.keyboard.type(record.anoNacimiento);
             }
@@ -28,16 +27,16 @@ module.exports = {
             })
                 .then(async (gRecaptchaResponse) => {
                     await page.waitForSelector('#g-recaptcha-response');
-                    await page.evaluate((gRecaptchaResponse) => {
-                        console.log(gRecaptchaResponse);
-                        let rcta = document.getElementById('g-recaptcha-response');
-                        rcta.innerText = gRecaptchaResponse.code;
+                    await page.evaluate((code) => {
                         window.enableBtn();
-                        window.envia();
-
-                    }, gRecaptchaResponse);
+                        let rcta = document.getElementById('g-recaptcha-response');
+                        console.log('Filling field ' + rcta +' with code ' + code);
+                        rcta.innerText = code;
+                    }, gRecaptchaResponse.code);
+                    await page.click('#btnEnviar')
                     utils.removeSolvedCaptcha(pageId);
-                    resolve({msg: 'Stage 4 done!', reset: false});
+                    logger.debug('Captcha Resolution Field Filled!');
+                    resolve({msg: 'Stage 4 done!'});
                 }).catch(err => {
                 reject(err)
             });

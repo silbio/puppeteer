@@ -6,20 +6,16 @@ module.exports = {
             let appointmentFound = await checkForButtons(page);
 
             if (appointmentFound) {
-                console.log('Appointment found, filling');
+                logger.info('Appointment found for ' + pageId +', filling form,');
                 page.click('#btnSiguiente');
                 resolve('Stage 6 done!');
             } else {
-                console.log('No appointment found, reloading ' + reloadCounter + '/10');
+                logger.debug('No appointment found, reloading ' + reloadCounter + '/10');
                 await page.waitForTimeout(2000);
                 await page.reload();
                 reloadCounter++;
                 if(reloadCounter === 10){
-                    resolve({msg: 'Reloads exhausted, restarting process!', reset: true});
-
-
-
-
+                    reject({message: 'Reloads exhausted, restarting process!', reset: true});
                 }
                 else{
                     this.run(page, record, resolve, reject);

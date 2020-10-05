@@ -1,60 +1,168 @@
+//Puppeteer and plugins
 const puppeteer = require('puppeteer-extra');
-const pageMaker = require('./pageMaker');
-const getData = require("./getData");
-const {v4: uuidv4} = require('uuid');
-// add stealth plugin and use defaults (all evasion techniques)
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 
+//Utils
+const {v4: uuidv4} = require('uuid');
+const path = require('path');
+const utils = require('./utils');
 
+//Express
+const express = require('express');
+const bodyParser = require('body-parser');
+const app = express();
+app.use(bodyParser.urlencoded({extended: true}));
+const port = 3000
+
+//Logging
+const log4js = require("log4js");
+log4js.configure({
+    appenders: {
+        console: {
+            type: 'console',
+            layout: {
+                type: 'pattern',
+                pattern: '%[%d %p%] %f:%l %m'
+            }
+        },
+        file: {
+            type: 'file',
+            filename: path.join(__dirname, '../logs/application.log'),
+            maxLogSize: 10485760,
+            backups: 3,
+            compress: true,
+            layout: {
+                type: 'pattern',
+                pattern: '* %p %d{yyyy/MM/dd-hh.mm.ss} %f:%l %m'
+            }
+        }
+
+    },
+    categories: {
+        default: {appenders: ['console', 'file'], level: 'debug', enableCallStack: true}
+    }
+});
+global.logger = log4js.getLogger();
+logger.level = 'debug';
+logger.debug('Logger ready!');
+
+
+//Application modules
+const pageMaker = require('./pageMaker');
+const getData = require('./getData');
+const coordinator = require('./coordinator')
+
+
+//Routes
+app.get('/', (req, res) => {
+    res.send('Silb.io, Stand In Line Bot');
+    logger.info('Home page hit!');
+})
+
+app.post('/sms', (req, res) => {
+
+    let body = req.body;
+    logger.debug('SMS received with text: ' + (JSON.stringify(body)));
+    if (body.secret === 'whowillqueueforyou?') {
+        res.json({"payload": {"success": true}});
+        let message = body.message;
+        let sender = body.from;
+        let timestamp = body.sent_timestamp;
+        let smsCode = message.replace(/[A-Za-z\s:,]/g, '');
+        coordinator.addSmsCode(smsCode, sender, timestamp);
+
+    }
+
+});
+
+app.listen(port, () => {
+    logger.info(`SILB listening at http://localhost:${port}`);
+});
+
+logger.info('Application starting!')
 let auth;
 
 
-
 //Get Initial data
+
+
 new Promise((resolve, reject) => {
     getData.init()
         .then((authToken) => {
-            console.log('Data initialized correctly');
+            logger.info('Data initialized correctly');
             auth = authToken;
             getData.populateDataMap(auth).then((data) => {
-                console.log(JSON.stringify(data));
+                logger.debug(JSON.stringify(data));
                 resolve(data);
             })
         })
         .catch((err) => {
-            // console.error(err);
+            // logger.error(err);
             reject(err);
         });
-}).then((data) => {
+}).then(async (records) => {
 
+    global.browser = await puppeteer.launch({headless: false});
+    global.userAgent = await browser.userAgent();
+    global.pages = {};
+    let probingProvincesProcesses = [];
+    let probingData = [];
+    let hittingData = {};
 
-//open browser
-    (async () => {
-        global.browser = await puppeteer.launch({headless: false});
-        global.userAgent = await browser.userAgent();
-        let records = data.records;
-
-        for (var i = 0; i < 1; i++) {
-            let record = records[i];
-            let pageId = await uuidv4();
-            await makePages();
-
-            async function makePages() {
-                await pageMaker.make(record, pageId).then(async (resolution) => {
-                    if (resolution === 'success') {
-                        console.log(record.numeroDocumento + ' successfully finished')
-                    } else if (resolution === 'reset') {
-                        await makePages();
-                    }
-                }).catch(e => {
-                    console.error(e)
-                });
+    records.forEach((record) => {
+        let processNumber = utils.getProcessEnumOrName(record.tipoTramite)
+        let combinedName = `${record.provincia} - ${processNumber}`;
+        if (probingProvincesProcesses.includes(combinedName)) {
+            if (hittingData.hasOwnProperty(combinedName)) {
+                hittingData[combinedName].push(record)
+            } else {
+                hittingData[combinedName] = [record]
             }
-
-
+        } else {
+            probingProvincesProcesses.push(combinedName);
+            probingData.push(record);
         }
+    });
+
+    await makePages(records);
+
+}).catch((error) => {
+    logger.error(error);
+});
 
 
-    })();
-})
+async function makePages(recordsForPages) {
+    for (let i = 0; i < recordsForPages.length; i++) {
+        let record = recordsForPages[i];
+        let pageId = await uuidv4();
+        let context = await browser.createIncognitoBrowserContext();
+        let page = await context.newPage();
+        pages[pageId] = page;
+
+        logger.info('pageId ' + pageId + ' assigned to ' + record.nombres);
+        new Promise((resolve, reject) => {
+            coordinator.addPageId(pageId, record.telefono);
+
+            pageMaker.make(record, page, pageId, resolve, reject);
+        })
+            .then(async (resolution) => {
+
+                if (resolution === 'success') {
+                    // TODO => Create user DB with records and credits, and the module to handle them. At this point, mark PPI for deletion from DB after a quarantine.
+                    logger.info('!!!!!!!!!!' + record.numeroDocumento + ' successfully finished!!!!!!!!!!');
+
+                }
+            }).catch(e => {
+
+            if (e.reset) {
+                logger.warn(pageId + ' reset.')
+                makePages([record]);
+            } else {
+                logger.error(e);
+            }
+        });
+    }
+
+
+}

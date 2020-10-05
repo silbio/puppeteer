@@ -24,9 +24,9 @@ module.exports = {
 
             if (markSelectedProcess) {
                 await page.click(btnAceptar);
-                resolve({msg: 'Stage 2 done!', reset: false});
+                resolve({msg: 'Stage 2 done!'});
             } else {
-                reject('Selected process is not available in this province, please check your data.\\n');
+                reject({message: 'Selected process is not available in this province, please check your data.'});
             }
 
         } catch (err) {

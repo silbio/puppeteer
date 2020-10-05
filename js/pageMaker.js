@@ -2,24 +2,21 @@ const utils = require('./utils');
 const stages = require("./stages");
 
 module.exports = {
-    async make(record, pageId) {
+    async make(record, page, pageId, mainResolve, mainReject) {
 
+        //utils.fetchCaptcha(pageId);
 
-
-        utils.fetchCaptcha(pageId);
-        let context = await browser.createIncognitoBrowserContext();
-        const page = await context.newPage();
         page.on('console', (msg) => {
             let msgText = msg.text();
-            if(msgText !== 'Failed to load resource: net::ERR_FAILED') {
-                console.log('PAGE LOG:', msgText);
+            if (msgText !== 'Failed to load resource: net::ERR_FAILED') {
+                logger.debug('PAGE LOG:', msgText);
             }
         });
         page.on('dialog', async dialog => {
             let clickResult = await dialog.accept();
-            console.log('Confirm box: ' + clickResult);
+            logger.debug('Confirm box: ' + clickResult);
         });
-        await page.setDefaultNavigationTimeout(process.env.NODE_ENV === 'development'?0:120000);
+        await page.setDefaultNavigationTimeout(process.env.NODE_ENV === 'development' ? 0 : 60000);
         await page.setRequestInterception(true);
         page.on('request', (request) => {
             if (['image', 'stylesheet', 'font'].indexOf(request.resourceType()) !== -1) {
@@ -31,13 +28,14 @@ module.exports = {
         await page.goto('https://sede.administracionespublicas.gob.es/pagina/index/directorio/icpplus');
 
 
-        new Promise(((resolve, reject) => {
-            stages.init(page, record, resolve, reject, pageId)
+        new Promise(((stagesResolve, stagesReject) => {
+            stages.init(page, record, stagesResolve, stagesReject, pageId)
         }))
             .then((results) => {
-                console.log(results);
+                mainResolve(results);
             }).catch((err) => {
-            console.error(err)
+                page.close();
+            mainReject(err);
         })
     }
 }
