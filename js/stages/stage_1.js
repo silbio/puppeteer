@@ -2,20 +2,20 @@ const utils = require("../utils");
 
 
 module.exports = {
-    async run(page, record, resolve, reject, pageId) {
+    async run(pageId, record, resolve, reject) {
         try {
             let btnAceptar = '#btnAceptar';
             let provinces = '#form'
-            await page.waitForSelector(provinces)
-            await page.waitForSelector(btnAceptar)
-            let optionValue = await utils.getOptionValueFromInnerText(page, 'form', record.provincia);
-            await page.select(`${provinces}`, optionValue);
-            await page.click(btnAceptar);
+            await pages[pageId].page.waitForSelector(provinces)
+            await pages[pageId].page.waitForSelector(btnAceptar)
+            let optionValue = await utils.getOptionValueFromInnerText(pageId, 'form', record.provincia);
+            await pages[pageId].page.select(`${provinces}`, optionValue);
+            await pages[pageId].page.click(btnAceptar);
             resolve({msg: 'Stage 1 done!'});
 
 
         } catch (err) {
-            reject(err);
+            reject({message: err, reset: true});
         }
 
     }

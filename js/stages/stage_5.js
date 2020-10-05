@@ -1,13 +1,13 @@
 module.exports = {
-    async run(page, record, resolve, reject, pageId) {
+    async run(pageId, record, resolve, reject) {
         try {
             let sendBtn = '#btnEnviar';
-            await page.waitForSelector(sendBtn);
-            await page.click(sendBtn);
+            await pages[pageId].page.waitForSelector(sendBtn);
+            await pages[pageId].page.click(sendBtn);
            resolve({msg: 'Stage 5 done!'});
 //TODO => make it check for captcha element and get a new solved one.
         } catch (err) {
-            reject(err);
+            reject({message: err, reset: true});
         }
 
     }

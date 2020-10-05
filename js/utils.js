@@ -40,9 +40,9 @@ module.exports = {
             }
         }
     },
-    getOptionValueFromInnerText: async (page, selectId, textToFind) => {
+    getOptionValueFromInnerText: async (pageId, selectId, textToFind) => {
         const optionWanted = (
-            await page.$x(`//*[@id = "${selectId}"]/option[text() = "${textToFind}"]`))[0];
+            await pages[pageId].page.$x(`//*[@id = "${selectId}"]/option[text() = "${textToFind}"]`))[0];
         return await (
             await optionWanted.getProperty('value')
         ).jsonValue();
@@ -65,9 +65,9 @@ module.exports = {
                     let taskId = response.data.taskId
                     let errorId = response.data.errorId;
                     if (taskId) {
-                        logger.debug('Captcha service  task Id: ' + taskId)
+                        logger.debug('Captcha service for task Id: ' + taskId + 'forpageId' + pageId );
                         new Promise((pollResolve, pollReject) => {
-                            logger.debug('Polling for captcha solution started');
+                            logger.debug('Polling for captcha solution started for pageId ' + pageId);
                             pollTask(taskId, 0, pollResolve, pollReject)
                         }).then((solvedCaptcha) => {
                             resolvedCaptchas[pageId] = {

@@ -13,7 +13,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 app.use(bodyParser.urlencoded({extended: true}));
-const port = 3000
+const port = 3000;
+app.use('/healthcheck', require('express-healthcheck')());
 
 //Logging
 const log4js = require("log4js");
@@ -60,6 +61,10 @@ app.get('/', (req, res) => {
     logger.info('Home page hit!');
 })
 
+app.get('/', (req,res)=>{
+    re
+})
+
 app.post('/sms', (req, res) => {
 
     let body = req.body;
@@ -98,7 +103,6 @@ new Promise((resolve, reject) => {
             })
         })
         .catch((err) => {
-            // logger.error(err);
             reject(err);
         });
 }).then(async (records) => {
@@ -138,13 +142,13 @@ async function makePages(recordsForPages) {
         let pageId = await uuidv4();
         let context = await browser.createIncognitoBrowserContext();
         let page = await context.newPage();
-        pages[pageId] = page;
+        pages[pageId] = {page: page};
 
         logger.info('pageId ' + pageId + ' assigned to ' + record.nombres);
         new Promise((resolve, reject) => {
             coordinator.addPageId(pageId, record.telefono);
 
-            pageMaker.make(record, page, pageId, resolve, reject);
+            pageMaker.make(pageId, record, resolve, reject);
         })
             .then(async (resolution) => {
 
@@ -153,13 +157,13 @@ async function makePages(recordsForPages) {
                     logger.info('!!!!!!!!!!' + record.numeroDocumento + ' successfully finished!!!!!!!!!!');
 
                 }
-            }).catch(e => {
+            }).catch(err => {
 
-            if (e.reset) {
-                logger.warn(pageId + ' reset.')
+            if (err.reset) {
+                logger.warn(pageId + ' reset' + (err.name === 'TimeoutError' ?' due to a page timeout.' : '.'))
                 makePages([record]);
             } else {
-                logger.error(e);
+                logger.error(err);
             }
         });
     }

@@ -1,18 +1,18 @@
 module.exports = {
-    async run(page, record, resolve, reject, pageId) {
+    async run(pageId, record, resolve, reject) {
         try {
 
-            if (await page.$('[name="rdbCita"]') !== null) {
-                await page.click('[name="rdbCita"][value="1"]');
-                await page.click('#btnSiguiente');
+            if (await pages[pageId].page.$('[name="rdbCita"]') !== null) {
+                await pages[pageId].page.click('[name="rdbCita"][value="1"]');
+                await pages[pageId].page.click('#btnSiguiente');
                 resolve({msg: 'Stage 8 done!'});
-            } else if (await page.$('#datepicker') !== null) {
-                await page.evaluate(
+            } else if (await pages[pageId].page.$('#datepicker') !== null) {
+                await pages[pageId].page.evaluate(
                     () => {
                        let slots = document.querySelectorAll('[id^=HUECO]');
                        slots[1].click();
                     });
-                await page.click('#btnSiguiente');
+                await pages[pageId].page.click('#btnSiguiente');
                 //TODO => Trigger hitting system to send all other process/province identical requests.
 
                 resolve({msg: 'Stage 8 done!'});
@@ -23,7 +23,7 @@ module.exports = {
 
 
         } catch (err) {
-            reject(err);
+            reject({message: err, reset: true});
         }
 
     }

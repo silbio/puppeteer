@@ -28,22 +28,22 @@ require("fs").readdirSync(normalizedPath).forEach(function (file) {
 });
 let pageMakerPromises = {}
 
-function init(page, record, resolve, reject, pageId) {
-
-    iterate(page, record, 0, pageId);
+function init(pageId, record, resolve, reject) {
+    pages[pageId].lastPage = '';
+    pages[pageId].reloadCounter = 0;
+    iterate(pageId, record, 0);
     pageMakerPromises[record.numeroDocumento] = {resolve: resolve, reject: reject}
 
 }
 
-let lastPage = '';
 
-function iterate(page, record, stage, pageId) {
+function iterate(pageId, record, stage) {
     logger.debug('Iterating stage ' + stage + ' of pageId ' + pageId)
-    let navPromise = page.waitForNavigation();
+    let navPromise = pages[pageId].page.waitForNavigation();
     let processPromise = new Promise((resolve, reject) => {
-        processes[stage].run(page, record, resolve, reject, pageId);
+        processes[stage].run(pageId, record, resolve, reject);
     })
-    let pageMetrics = page.metrics();
+    let pageMetrics = pages[pageId].page.metrics();
 
     Promise.all([processPromise, navPromise, pageMetrics])
         .then((results) => {
@@ -58,25 +58,25 @@ function iterate(page, record, stage, pageId) {
             let successUrl = successPages[stage];
 
 
-            if (pageUrl === lastPage) {
+            if (pageUrl === pages[pageId].page.lastPage) {
                 stageReloaded = true;
-                logger.debug('Stage ' + stage + ' was reloaded.')
+                logger.debug('Stage ' + stage + ' was reloaded for pageId ' + pageId)
             }
             logger.debug('stage:' + stage + '/' + (numberOfStages - 1), 'pageUrl: ' + pageUrl, 'successUrl: ' + successUrl);
             if (successUrl.includes(pageUrl)) {
                 if (!stageReloaded) {
                     stage++;
                 }
-                lastPage = pageUrl;
+                pages[pageId].lastPage = pageUrl;
                 if (stage === numberOfStages) {
                     pageMakerPromises[record.numeroDocumento].resolve('success');
-                    setTimeout(()=>{
+                    setTimeout(() => {
                         logger.debug('Closing page: ' + pageId)
-                        page.close();
-                        },2000)
+                        pages[pageId].close();
+                    }, 2000)
                 } else {
 
-                    iterate(page, record, stage, pageId);
+                    iterate(pageId, record, stage);
                 }
             } else {
                 pageMakerPromises[record.numeroDocumento].reject({
@@ -90,13 +90,11 @@ function iterate(page, record, stage, pageId) {
         pageMakerPromises[record.numeroDocumento].reject(
             {
                 message: `
-                Error running stage ${stage} code.
+                Error running stage ${stage}.
                 Error Message: 
-                    ${err.message}
-                    -------------
-                    ${err.stack}
-    `,
-                reset: (err.reset || false)
+                    ${err.message}`,
+                stack: err.stack,
+                reset: ((err.reset || err.name === 'TimeoutError') ? true : false)
 
             }
         )

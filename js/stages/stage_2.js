@@ -1,11 +1,11 @@
 module.exports = {
-    async run(page, record, resolve, reject, pageId) {
+    async run(pageId, record, resolve, reject) {
         try {
 
             let btnAceptar = '#btnAceptar';
-            await page.waitForSelector(btnAceptar);
+            await pages[pageId].page.waitForSelector(btnAceptar);
 
-            let markSelectedProcess = await page.evaluate(
+            let markSelectedProcess = await pages[pageId].page.evaluate(
                 (record) => {
                     let optionsArray = document.querySelectorAll('select[class="mf-input__l"] > option');
                     for (let optionsIndex = 0; optionsIndex < optionsArray.length; optionsIndex++) {
@@ -23,14 +23,14 @@ module.exports = {
             );
 
             if (markSelectedProcess) {
-                await page.click(btnAceptar);
+                await pages[pageId].page.click(btnAceptar);
                 resolve({msg: 'Stage 2 done!'});
             } else {
                 reject({message: 'Selected process is not available in this province, please check your data.'});
             }
 
         } catch (err) {
-            reject(err);
+            reject({message: err, reset: true});
         }
 
     }
