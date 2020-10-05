@@ -1,4 +1,0 @@
-
-
-TODO => Create front-end for users to pay, add credits and input data.
-
