@@ -1,6 +1,5 @@
 const path = require('path');
 
-
 let processes = [];
 let numberOfStages = 0;
 let successPages = [
@@ -43,13 +42,13 @@ function iterate(pageId, record, stage) {
     let processPromise = new Promise((resolve, reject) => {
         processes[stage].run(pageId, record, resolve, reject);
     })
-    let pageMetrics = pages[pageId].page.metrics();
+   // let pageMetrics = pages[pageId].page.metrics();
 
-    Promise.all([processPromise, navPromise, pageMetrics])
+    Promise.all([processPromise, navPromise])
         .then((results) => {
             let stageReloaded = false;
             let processResolution = results[0];
-            logger.debug('Stage ' + stage + ' for pageId ' + pageId + 'finished with resolution: ' + processResolution.msg + '.\n' + JSON.stringify(results[2]));
+            logger.debug('Stage ' + stage + ' for pageId ' + pageId + 'finished with resolution: ' + processResolution.msg + '.');
 
             let navigationResolution = results[1];
 
@@ -94,7 +93,7 @@ function iterate(pageId, record, stage) {
                 Error Message: 
                     ${err.message}`,
                 stack: err.stack,
-                reset: ((err.reset || err.name === 'TimeoutError') ? true : false)
+                reset: (!!(err.reset || err.name === 'TimeoutError'))
 
             }
         )

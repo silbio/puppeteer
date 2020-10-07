@@ -5,7 +5,7 @@ module.exports = {
 
             if (appointmentFound) {
                 logger.info('Appointment found for ' + pageId + ', filling form,');
-                pages.click('#btnSiguiente');
+                await pages[pageId].page.click('#btnSiguiente');
                 resolve('Stage 6 done!');
             } else {
                 logger.debug('No appointment found, reloading ' + pageId + ' - ' + pages[pageId].reloadCounter + '/10');
@@ -22,7 +22,7 @@ module.exports = {
 
 
         } catch (err) {
-            reject({message: err, reset: true});
+            reject({message: err, reset: false});
         }
 
     }

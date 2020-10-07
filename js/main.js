@@ -10,8 +10,9 @@ const utils = require('./utils');
 
 //Cron
 const CronJob = require('cron').CronJob;
-const job = new CronJob('00 45 23 * * *', function() {
+const job = new CronJob('00 00 6 * * *', function() {
     console.log('Cron job starting app!');
+    start();
 }, null, true, 'Europe/Madrid');
 job.start();
 
@@ -37,7 +38,7 @@ log4js.configure({
         file: {
             type: 'file',
             filename: path.join(__dirname, '../logs/application.log'),
-            maxLogSize: 10485760,
+            maxLogSize: 2097152,
             backups: 3,
             compress: true,
             layout: {
@@ -70,6 +71,7 @@ app.get('/', (req, res) => {
 
 app.get('/start', (req,res)=>{
     if(req.query.password === "kabalahMacarena") {
+        logger.info('Silb started remotely.')
         res.send('Starting SILB');
         start();
     }
@@ -120,7 +122,7 @@ function start(){
             });
     }).then(async (records) => {
 
-        global.browser = await puppeteer.launch({headless: process.env.NODE_ENV !== 'development' ? true : false});
+        global.browser = await puppeteer.launch({headless: process.env.NODE_ENV !== 'development'});
         global.userAgent = await browser.userAgent();
         global.pages = {};
         let probingProvincesProcesses = [];
@@ -173,7 +175,7 @@ async function makePages(recordsForPages) {
             }).catch(err => {
 
             if (err.reset) {
-                logger.warn(pageId + ' reset' + (err.name === 'TimeoutError' ?' due to a page timeout.' : '.'))
+                logger.warn(pageId + ' reset' + (err.name === 'TimeoutError' ?' due to a page timeout.' : 'Due to error: ' + err.message + '.'))
                 makePages([record]);
             } else {
                 logger.error(err);

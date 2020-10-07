@@ -12,13 +12,13 @@ module.exports = {
                     await pages[pageId].page.click('#btnConfirmar')
                     resolve({msg: 'Stage 9 done!'});
                 }).catch((err) => {
-                    reject({message: err, reset: true});
+                    reject( err);
                 })
             }).catch((err) => {
-                reject({message: err, reset: true});
+                reject( err);
             })
         } catch (err) {
-            reject({message: err, reset: true});
+            reject(err);
         }
 
     }

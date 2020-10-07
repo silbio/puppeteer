@@ -48,7 +48,7 @@ module.exports = {
         ).jsonValue();
     },
     fetchCaptcha: (pageId) => {
-        return new Promise((resolve,reject)=>{
+        return new Promise((resolve, reject) => {
             logger.info('Captcha for pageId: ' + pageId + ' requested.')
             axios.post('http://api.anti-captcha.com/createTask', {
                 'clientKey': antiCaptchaClientKey,
@@ -65,10 +65,10 @@ module.exports = {
                     let taskId = response.data.taskId
                     let errorId = response.data.errorId;
                     if (taskId) {
-                        logger.debug('Captcha service for task Id: ' + taskId + 'forpageId' + pageId );
+                        logger.debug('Captcha service for task Id: ' + taskId + ' for pageId ' + pageId);
                         new Promise((pollResolve, pollReject) => {
                             logger.debug('Polling for captcha solution started for pageId ' + pageId);
-                            pollTask(taskId, 0, pollResolve, pollReject)
+                            pollTask(taskId, 0, pollResolve, pollReject, pageId)
                         }).then((solvedCaptcha) => {
                             resolvedCaptchas[pageId] = {
                                 code: solvedCaptcha, timestamp: new Date().getTime()
@@ -80,16 +80,18 @@ module.exports = {
 
                         });
                     } else if (errorId) {
-                        reject({message: `${errorId} - 
+                        reject({
+                            message: `${errorId} - 
                         ${response.data.errorCode} -  
-                        ${response.data.errorDescription}`, reset: true});
+                        ${response.data.errorDescription}`, reset: true
+                        });
 
                     }
 
                 })
                 .catch(error => {
 
-                    reject({message:error, reset:true})
+                    reject({message: error, reset: true})
                 });
         })
     },
@@ -109,7 +111,7 @@ module.exports = {
     }
 }
 
-function pollTask(taskId, attempt, resolve, reject) {
+function pollTask(taskId, attempt, resolve, reject, pageId) {
     axios.post('https://api.anti-captcha.com/getTaskResult',
         {
             'clientKey': antiCaptchaClientKey,
@@ -118,15 +120,15 @@ function pollTask(taskId, attempt, resolve, reject) {
         let gRecaptchaStatus = taskResponse.data.status
 
         if (gRecaptchaStatus === 'ready') {
-            logger.info('reCaptcha solution ready.')
+            logger.info('reCaptcha solution for ' + pageId + ' ready.')
             resolve(taskResponse.data.solution.gRecaptchaResponse);
         } else if (attempt > 30) {
-            reject('Too many polling tries');
+            reject('Too many polling tries for pageId: ' + pageId);
         } else {
             logger.debug('Attempts to poll: ' + attempt)
             attempt++;
             setTimeout(() => {
-                pollTask(taskId, attempt, resolve, reject);
+                pollTask(taskId, attempt, resolve, reject, pageId);
             }, 1000)
         }
     })

@@ -7,7 +7,7 @@ module.exports = {
            resolve({msg: 'Stage 5 done!'});
 //TODO => make it check for captcha element and get a new solved one.
         } catch (err) {
-            reject({message: err, reset: true});
+            reject({message: err, reset: false});
         }
 
     }

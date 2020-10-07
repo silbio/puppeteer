@@ -26,11 +26,11 @@ module.exports = {
                 await pages[pageId].page.click(btnAceptar);
                 resolve({msg: 'Stage 2 done!'});
             } else {
-                reject({message: 'Selected process is not available in this province, please check your data.'});
+                reject({message: 'Selected process is not available in this province, please check your data.', reset: false});
             }
 
         } catch (err) {
-            reject({message: err, reset: true});
+            reject({message: err, reset: false});
         }
 
     }

@@ -2,6 +2,7 @@ let keyPairs = [];
 
 module.exports = {
     addPageId: (pageId, phoneId) => {
+        logger.debug('PageId ' + pageId + ' was added to the coordinator keypairs. Assigned phone number is: ' + phoneId)
         keyPairs.push({pageId: pageId, phoneId: phoneId});
     },
     addRequestTimestampToPageId: (pageId, timestamp) => {
@@ -9,10 +10,12 @@ module.exports = {
             let foundKeypair = keyPairs.find(pair => {
                 if (pair.pageId === pageId) {
                     pair.pageTimestamp = timestamp;
-                    resolve('Request Timestamp added to pageId: ' + pageId);
+                    return true
                 }
             });
-            if(!foundKeypair){
+            if (foundKeypair) {
+                resolve('Request Timestamp added to pageId: ' + pageId);
+            } else {
                 reject({message: 'Couldn\'t find pageId ' + pageId + ' in coordinator Key Pairs.', reset: true});
             }
 
@@ -22,10 +25,10 @@ module.exports = {
     addSmsCode: (smsCode, sender, timestamp) => {
         return new Promise((resolve) => {
             for (let pair of keyPairs) {
-                if (!pair.hasOwnProperty(smsCode)) {
+                if (!pair.hasOwnProperty('smsCode')) {
                     pair['smsCode'] = smsCode;
                     pair['smsTimestamp'] = parseInt(timestamp);
-                    resolve('SMS Code added to coordinator pair successfully!');
+                    resolve('SMS Code ' + smsCode + ' added to coordinator pair successfully for pageId' + pair['pageId']);
                     break;
                 }
             }
@@ -33,13 +36,13 @@ module.exports = {
     },
     getSmsCodeFromPageId: async (pageId) => {
         return new Promise((resolve, reject) => {
-            getSmsCodeFromPageId(pageId, resolve, reject);
+            retrieveCode(pageId, resolve, reject);
         });
     }
 }
 
 
-async function getSmsCodeFromPageId(pageId, resolve, reject) {
+async function retrieveCode(pageId, resolve, reject) {
     let matchingPair = keyPairs.find(pair => pair.pageId === pageId);
     matchingPair.smsAttempts = matchingPair.smsAttempts ? matchingPair.smsAttempts + 1 : 1;
     if (matchingPair.smsCode) {
@@ -48,11 +51,11 @@ async function getSmsCodeFromPageId(pageId, resolve, reject) {
     } else {
         setTimeout(() => {
             if (matchingPair.smsAttempts < 30) {
-                getSmsCodeFromPageId(pageId, resolve, reject);
+                retrieveCode(pageId, resolve, reject);
             } else {
                 reject({message: 'Too many attempts to retrieve SMS, restarting.', reset: true})
             }
 
-        }, 200)
+        }, 1000)
     }
 }

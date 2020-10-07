@@ -8,7 +8,7 @@ module.exports = {
            resolve({msg: 'Stage 3 done!'});
 
         } catch (err) {
-            reject({message: err, reset: true});
+            reject({message: err, reset: false});
         }
 
     }
