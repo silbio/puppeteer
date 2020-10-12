@@ -28,12 +28,24 @@ module.exports = {
             19: 'FAMILIARES DE RESIDENTES COMUNITARIOS',
             20: 'INFORMACIÓN',
             21: 'REAGRUPACIÓN FAMILIAR',
-            22: 'Recuperación de la autorización de larga duración'
+            22: 'Recuperación de la autorización de larga duración',
+            23: 'POLICIA-OTROS TRÁMITES COMISARIA',
+            24: 'AUTORIZACIÓN DE RESIDENCIA POR ARRAIGO',
+            25: 'AUTORIZACIÓN PARA TRABAJAR',
+            26: 'AUTORIZACIÓN DE RESIDENCIA Y TRABAJO INICIAL POR CUENTA PROPIA',
+            27: 'RENOVACIONES TRABAJO',
+            28: 'OTROS TRABAJO',
+            29: 'COMUNITARIOS',
+            30: 'RENOVACIONES RESIDENCIA',
+            31: 'AUT. RESIDENCIA POR OTRAS CIRCUNSTANCIAS EXCEPCIONALES',
+            32: 'AUTORIZACIÓN DE ESTANCIA POR ESTUDIOS',
+            33: 'CÉDULA DE INSCRIPCIÓN Y TÍTULO DE VIAJE',
+            34: 'OTROS RESIDENCIA'
         }
         if (typeof processId === 'number') {
             return processes[processId];
         } else {
-            for (var processNumber in processes) {
+            for (let processNumber in processes) {
                 if (processes[processNumber] === processId) {
                     return processNumber;
                 }
@@ -95,6 +107,16 @@ module.exports = {
                 });
         })
     },
+    checkPageIdTraits: async (pageId, selector, expectedContent) => {
+        try {
+            let element = await pages[pageId].page.$(selector);
+            let elementProperty = await element.getProperty('innerText');
+            let elementContent = elementProperty._remoteObject.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return elementContent.indexOf(expectedContent) > -1
+        } catch (e) {
+            return false;
+        }
+    },
     removeSolvedCaptcha(pageId) {
         delete resolvedCaptchas[pageId]
     },
@@ -125,7 +147,7 @@ function pollTask(taskId, attempt, resolve, reject, pageId) {
         } else if (attempt > 30) {
             reject('Too many polling tries for pageId: ' + pageId);
         } else {
-            logger.debug('Attempts to poll: ' + attempt)
+            logger.debug(attempt + ' attempts to poll for pageId: ' + pageId);
             attempt++;
             setTimeout(() => {
                 pollTask(taskId, attempt, resolve, reject, pageId);

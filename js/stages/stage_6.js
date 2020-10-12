@@ -6,18 +6,15 @@ module.exports = {
             if (appointmentFound) {
                 logger.info('Appointment found for ' + pageId + ', filling form,');
                 await pages[pageId].page.click('#btnSiguiente');
-                resolve('Stage 6 done!');
-            } else {
+                resolve({msg:'Stage 6 done!'});
+            } else if(await pages[pageId].page.$('#btnSalir') !== null){
                 logger.debug('No appointment found, reloading ' + pageId + ' - ' + pages[pageId].reloadCounter + '/10');
                 await pages[pageId].page.waitForTimeout(2000);
                 await pages[pageId].page.reload();
-                pages[pageId].reloadCounter++;
-                if (pages[pageId].reloadCounter === 10) {
-                    reject({message: 'Reloads exhausted for pageId' + pageId + ', restarting process!', reset: true});
-                } else {
-                    this.run(pageId, record, resolve, reject);
-                }
-
+                resolve({msg:'Stage 6 reloaded!'})
+            }
+            else{
+                reject({message: "Site error, probably session timeout, closing window and restarting.", reset: true})
             }
 
 

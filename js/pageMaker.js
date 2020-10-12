@@ -4,7 +4,9 @@ const stages = require("./stages");
 module.exports = {
     async make(pageId, record, mainResolve, mainReject) {
 
-        utils.fetchCaptcha(pageId);
+        utils.fetchCaptcha(pageId).catch((err)=>{
+            mainReject(err);
+        });
 
         pages[pageId].page.on('console', (msg) => {
             let msgText = msg.text();
@@ -16,8 +18,8 @@ module.exports = {
             let clickResult = await dialog.accept();
             logger.debug('Confirm box: ' + clickResult);
         });
-        await pages[pageId].page.setDefaultNavigationTimeout(process.env.NODE_ENV === 'development' ? 60000 : 180000);
-        await pages[pageId].page.setRequestInterception(true);
+        await pages[pageId].page.setDefaultNavigationTimeout(process.env.NODE_ENV === 'development' ? 0 : 60000);
+       await pages[pageId].page.setRequestInterception(true);
         pages[pageId].page.on('request', (request) => {
             if (['image', 'stylesheet', 'font'].indexOf(request.resourceType()) !== -1) {
                 request.abort();

@@ -1,7 +1,7 @@
 const {google} = require('googleapis');
 let privateKey = require("../res/privateKey.json");
 const spreadsheetId = '1LhpqxpRBJeE2ywUZtnkXyLuv74j3yKrM53VAxwDCUSA';
-const phoneNumbers = ['644378714', '644354712'];
+const phoneNumbers = ['644354712', '644378714'];
 const emails = ['turnmaker@silb.io', 'turnos@silb.io']
 
 
@@ -57,8 +57,9 @@ function populateDataMap(auth) {
                                 'email': emails[i % 2 === 0 ? 0 : 1],
                                 'motivo': row[10],
                                 'anoNacimiento': row[11],
-                                'status': row[12].toLowerCase(),
-                                'dataRow': i + 2
+                                'dataRow': i + 2,
+                                'probing': false,
+                                'striking':[]
                             }
                         )
                     });

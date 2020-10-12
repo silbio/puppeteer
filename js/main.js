@@ -10,7 +10,7 @@ const utils = require('./utils');
 
 //Cron
 const CronJob = require('cron').CronJob;
-const job = new CronJob('00 00 6 * * *', function() {
+const job = new CronJob('00 00 6 * * *', function () {
     console.log('Cron job starting app!');
     start();
 }, null, true, 'Europe/Madrid');
@@ -54,7 +54,6 @@ log4js.configure({
 });
 global.logger = log4js.getLogger();
 logger.level = 'debug';
-logger.debug('Logger ready!');
 
 
 //Application modules
@@ -69,13 +68,22 @@ app.get('/', (req, res) => {
     logger.info('Home page hit!');
 })
 
-app.get('/start', (req,res)=>{
-    if(req.query.password === "kabalahMacarena") {
+app.get('/start', (req, res) => {
+    if (req.query.password === "kabalahMacarena") {
         logger.info('Silb started remotely.')
         res.send('Starting SILB');
         start();
+    } else {
+        res.sendStatus(401);
     }
-    else{
+})
+
+app.get('/stop', (req, res) => {
+    if (req.query.password === "kabalahMacarena") {
+        logger.info('Silb stopped remotely.')
+        res.send('Stopping SILB');
+        stop();
+    } else {
         res.sendStatus(401);
     }
 })
@@ -83,15 +91,19 @@ app.get('/start', (req,res)=>{
 app.post('/sms', (req, res) => {
 
     let body = req.body;
-    logger.debug('SMS received with text: ' + (JSON.stringify(body)));
+    logger.debug('SMS received with text: ' + JSON.stringify(req.body));
     if (body.secret === 'whowillqueueforyou?') {
-        res.json({"payload": {"success": true}});
+        res.sendStatus(200);
         let message = body.message;
-        let sender = body.from;
-        let timestamp = body.sent_timestamp;
+        let simSlot = body.slot;
+        let timestamp = body.timestamp;
         let smsCode = message.replace(/[A-Za-z\s:,]/g, '');
-        coordinator.addSmsCode(smsCode, sender, timestamp);
+        coordinator.addSmsCode(smsCode, simSlot, timestamp)
+            .then(r => logger.info(r))
+            .catch(e => logger.warn('Error adding SMS to session. ' + e));
 
+    } else {
+        res.sendStatus(401);
     }
 
 });
@@ -100,13 +112,14 @@ app.listen(port, () => {
     logger.info(`SILB listening at http://localhost:${port}`);
 });
 
-logger.info('Application starting!')
-let auth;
+logger.debug('---------------------------- Application Initialized ----------------------------');
 
+
+start();
 
 //Get Initial data
-
-function start(){
+function start() {
+    let auth;
     new Promise((resolve, reject) => {
         getData.init()
             .then((authToken) => {
@@ -127,61 +140,71 @@ function start(){
         global.pages = {};
         let probingProvincesProcesses = [];
         let probingData = [];
-        let hittingData = {};
+        let strikingData = {};
 
         records.forEach((record) => {
             let processNumber = utils.getProcessEnumOrName(record.tipoTramite)
             let combinedName = `${record.provincia} - ${processNumber}`;
             if (probingProvincesProcesses.includes(combinedName)) {
-                if (hittingData.hasOwnProperty(combinedName)) {
-                    hittingData[combinedName].push(record)
+                if (strikingData.hasOwnProperty(combinedName)) {
+                    strikingData[combinedName].push(record)
                 } else {
-                    hittingData[combinedName] = [record]
+                    strikingData[combinedName] = [record]
                 }
             } else {
                 probingProvincesProcesses.push(combinedName);
+                record.probing = combinedName;
                 probingData.push(record);
             }
         });
-
-        await makePages(records);
-
+        for (let i = 0; i < probingData.length; i++) {
+            probingData[i].striking = strikingData[probingData[i].probing] || [];
+            logger.info('Probing data for province/process combo ' + probingData[i].probing + '. It has ' + probingData[i].striking.length + ' strike records.')
+            await makePages(probingData[i], null);
+        }
     }).catch((error) => {
         logger.error(error);
     });
 }
 
-async function makePages(recordsForPages) {
-    for (let i = 0; i < recordsForPages.length; i++) {
-        let record = recordsForPages[i];
-        let pageId = await uuidv4();
-        let context = await browser.createIncognitoBrowserContext();
-        let page = await context.newPage();
-        pages[pageId] = {page: page};
+function stop() {
+    browser.close()
+}
 
-        logger.info('pageId ' + pageId + ' assigned to ' + record.nombres);
-        new Promise((resolve, reject) => {
-            coordinator.addPageId(pageId, record.telefono);
+//Takes in pageId if possible (to maintain the same person with the same ID).
+async function makePages(record, pageId) {
 
-            pageMaker.make(pageId, record, resolve, reject);
-        })
-            .then(async (resolution) => {
+    pageId = pageId || await uuidv4();
+    let context = await browser.createIncognitoBrowserContext();
+    let page = await context.newPage();
+    pages[pageId] = {page: page};
 
-                if (resolution === 'success') {
-                    // TODO => Create user DB with records and credits, and the module to handle them. At this point, mark PPI for deletion from DB after a quarantine.
-                    logger.info('!!!!!!!!!!' + record.numeroDocumento + ' successfully finished!!!!!!!!!!');
+    logger.info('pageId ' + pageId + ' assigned to ' + record.nombres);
+    new Promise((resolve, reject) => {
+        coordinator.addPageId(pageId, record.telefono);
 
+        pageMaker.make(pageId, record, resolve, reject);
+    })
+        .then((resolution) => {
+
+            if (resolution.msg === 'success') {
+                // TODO => Create user DB with records and credits, and the module to handle them. At this point, mark PPI for deletion from DB after a quarantine.
+                logger.info('!!!!!!!!!!' + record.numeroDocumento + ' successfully finished!!!!!!!!!!');
+                let strikingData = resolution.strikingData || [];
+                for (let k = 0; k < strikingData.length; k++) {
+                    logger.info('Probing successful, starting with strike data: ' + JSON.stringify(strikingData[k]));
+                    makePages(strikingData[k], null);
                 }
-            }).catch(err => {
-
-            if (err.reset) {
-                logger.warn(pageId + ' reset' + (err.name === 'TimeoutError' ?' due to a page timeout.' : 'Due to error: ' + err.message + '.'))
-                makePages([record]);
-            } else {
-                logger.error(err);
             }
-        });
-    }
+        }).catch(err => {
+
+        if (err.reset) {
+            logger.warn(pageId + ' reset' + (err.name === 'TimeoutError' ? ' due to a page timeout.' : ' due to error: ' + err.message + '.'))
+            makePages(record, pageId);
+        } else {
+            logger.error(err);
+        }
+    });
 
 
 }

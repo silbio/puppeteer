@@ -12,10 +12,9 @@ module.exports = {
                        let slots = document.querySelectorAll('[id^=HUECO]');
                        slots[1].click();
                     });
-                await pages[pageId].page.click('#btnSiguiente');
-                //TODO => Trigger hitting system to send all other process/province identical requests.
-
                 resolve({msg: 'Stage 8 done!'});
+
+
             } else {
                 reject({message: 'Turn taken before reservation.', reset: true});
             }
