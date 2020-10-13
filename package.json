@@ -1,6 +1,6 @@
 {
   "name": "silb.io",
-  "version": "1.0.8",
+  "version": "1.0.10",
   "description": "Stand in Line Bot",
   "main": "js/main.js",
   "scripts": {

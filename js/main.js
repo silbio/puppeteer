@@ -5,11 +5,18 @@ puppeteer.use(StealthPlugin());
 
 //Cron
 const CronJob = require('cron').CronJob;
-const job = new CronJob('00 00 6 * * *', function () {
-    console.log('Cron job starting app!');
+const scheduledStart = new CronJob('00 00 6 * * *', function () {
+    console.log('Cron scheduledStart starting app!');
     start();
 }, null, true, 'Europe/Madrid');
-job.start();
+scheduledStart.start();
+
+const regularRestart = new CronJob('00 31 * * * *', function () {
+    console.log('Cron Regular Restart');
+    stop();
+    start();
+}, null, true, 'Europe/Madrid');
+regularRestart.start();
 
 //Express
 const express = require('express');
@@ -167,7 +174,7 @@ function start() {
 }
 
 function stop() {
-    browser.close()
+    browser.close();
 }
 
 //Takes in pageId if possible (to maintain the same person with the same ID).
