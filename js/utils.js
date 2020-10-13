@@ -4,6 +4,7 @@ const antiCaptchaClientKey = '0024131b365903ca5f32c9b2b1baf9ed';
 let resolvedCaptchas = {}
 
 module.exports = {
+
     getProcessEnumOrName: (processId) => {
         const processes = {
             0: 'POLICIA - RECOGIDA DE TARJETA DE IDENTIDAD DE EXTRANJERO (TIE)',
@@ -48,6 +49,41 @@ module.exports = {
             for (let processNumber in processes) {
                 if (processes[processNumber] === processId) {
                     return processNumber;
+                }
+            }
+        }
+    },
+    waitForSimLock: (simSlot) => {
+        return new Promise(resolve => {
+            let simLockInterval = setInterval(async () => {
+                if (!simSlots[simSlot].locked) {
+                    simSlots[simSlot].locked = true;
+                    simSlots[simSlot].smsCode = null;
+                    clearInterval(simLockInterval);
+                    resolve();
+                }
+            }, 1000);
+        })
+    },
+    waitForSms: (simSlot)=>{
+        return new Promise( resolve => {
+            let smsInterval = setInterval(async () => {
+                if (simSlots[simSlot].smsCode) {
+                    clearInterval(smsInterval);
+                    resolve();
+                }
+            }, 1000);
+        })
+    },
+    getPhoneOrSimSlotNumber: (number) => {
+        //Get phone number from SIM slot
+        if (/^slot[01]$/.test(number)) {
+            return simSlots[number].phoneNumber;
+        } else {
+            //Get SIM slot from phone number
+            for (let simSlotDataPoint in simSlots) {
+                if (simSlotDataPoint.phoneNumber === number) {
+                    return number;
                 }
             }
         }

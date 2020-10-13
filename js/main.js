@@ -3,11 +3,6 @@ const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 
-//Utils
-const {v4: uuidv4} = require('uuid');
-const path = require('path');
-const utils = require('./utils');
-
 //Cron
 const CronJob = require('cron').CronJob;
 const job = new CronJob('00 00 6 * * *', function () {
@@ -23,6 +18,15 @@ const app = express();
 app.use(bodyParser.urlencoded({extended: true}));
 const port = 3000;
 app.use('/healthcheck', require('express-healthcheck')());
+
+//Utils
+const {v4: uuidv4} = require('uuid');
+const path = require('path');
+global.simSlots = {
+    'slot0': {locked: false, phoneNumber: '644354712', smsCode: null},
+    'slot1': {locked: false, phoneNumber: '644378714', smsCode: null}
+};
+const utils = require('./utils');
 
 //Logging
 const log4js = require("log4js");
@@ -59,14 +63,13 @@ logger.level = 'debug';
 //Application modules
 const pageMaker = require('./pageMaker');
 const getData = require('./getData');
-const coordinator = require('./coordinator')
-
 
 //Routes
 app.get('/', (req, res) => {
     res.send('Silb.io, Stand In Line Bot');
     logger.info('Home page hit!');
 })
+
 
 app.get('/start', (req, res) => {
     if (req.query.password === "kabalahMacarena") {
@@ -95,12 +98,8 @@ app.post('/sms', (req, res) => {
     if (body.secret === 'whowillqueueforyou?') {
         res.sendStatus(200);
         let message = body.message;
-        let simSlot = body.slot;
-        let timestamp = body.timestamp;
-        let smsCode = message.replace(/[A-Za-z\s:,]/g, '');
-        coordinator.addSmsCode(smsCode, simSlot, timestamp)
-            .then(r => logger.info(r))
-            .catch(e => logger.warn('Error adding SMS to session. ' + e));
+        let simSlot = 'slot' + body.slot;
+        simSlots[simSlot].smsCode = message.replace(/[A-Za-z\s:,]/g, '');
 
     } else {
         res.sendStatus(401);
@@ -181,7 +180,7 @@ async function makePages(record, pageId) {
 
     logger.info('pageId ' + pageId + ' assigned to ' + record.nombres);
     new Promise((resolve, reject) => {
-        coordinator.addPageId(pageId, record.telefono);
+
 
         pageMaker.make(pageId, record, resolve, reject);
     })

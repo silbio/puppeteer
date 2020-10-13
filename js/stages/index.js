@@ -116,7 +116,7 @@ function iterate(pageId, record, stage) {
                 pageMakerPromises[record.numeroDocumento].resolve({msg: 'success', strikingData: processResolution.strikingData});
                 setTimeout(() => {
                     logger.debug('Closing page: ' + pageId)
-                    //pages[pageId].page.close();
+                    pages[pageId].page.close();
                 }, 10000)
             } else {
                 iterate(pageId, record, stage);
