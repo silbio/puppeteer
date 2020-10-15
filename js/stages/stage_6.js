@@ -9,8 +9,8 @@ module.exports = {
                 resolve({msg:'Stage 6 done!'});
             } else if(await pages[pageId].page.$('#btnSalir') !== null){
                 logger.debug('No appointment found, reloading ' + pageId + ' - ' + pages[pageId].reloadCounter + '/10');
-                await pages[pageId].page.waitForTimeout(2000);
-                await pages[pageId].page.reload();
+                await pages[pageId].page.waitForTimeout(global.tryInterval);
+                await pages[pageId].page.goBack();
                 resolve({msg:'Stage 6 reloaded!'})
             }
             else{

@@ -83,23 +83,24 @@ function iterate(pageId, record, stage) {
 
             let stageReloaded = false;
             let navigationResolution = results[1];
+            if(!navigationResolution && process.env.NODE_ENV === 'development'){
+                debugger;
+            }
             let pageUrl = navigationResolution._url.split(/[?;]/)[0];
             let successUrls = stageSuccessCriteria[stage].urls;
             let successUrlIsValid = successUrls.includes(pageUrl);
             logger.debug('stage:' + stage + '/' + (numberOfStages - 1), 'pageId: ' + pageId, 'pageUrl: ' + pageUrl, 'successUrls: ' + successUrls);
 
-            //If URL is the same or if id object is the same, it's a reloaded stage
-
-            //Check against the previous stage traits
-            let matchPreviousStageTraits = stage === 0 ? false : await utils.checkPageIdTraits(pageId, stageSuccessCriteria[(stage-1)].idTraits.selector, stageSuccessCriteria[(stage-1)].idTraits.contents);
+            //Check against the previous stage traits - If URL is the same or if id object is the same, it's a reloaded stage
+            let matchPreviousStageTraits = stage === 0 ? false : await utils.checkPageIdTraits(pageId, stageSuccessCriteria[(stage - 1)].idTraits.selector, stageSuccessCriteria[(stage - 1)].idTraits.contents);
             if (pageUrl === pages[pageId].lastPage || matchPreviousStageTraits) {
                 stageReloaded = true;
                 pages[pageId].reloadCounter++;
-                logger.debug('Stage ' + stage + ' was reloaded for pageId ' + pageId+'. Previous page traits matched: ' + matchPreviousStageTraits);
+                logger.debug('Stage ' + stage + ' was reloaded for pageId ' + pageId + '. Previous page traits matched: ' + matchPreviousStageTraits);
                 if (pages[pageId].reloadCounter === 10) {
                     pages[pageId].reloadCounter = 0;
                     pageMakerPromises[record.numeroDocumento].reject({
-                        message: 'Reloads exhausted on stage' + stage + 'for pageId' + pageId + ', restarting process!',
+                        message: 'Reloads exhausted on stage' + stage + ' for pageId ' + pageId + ', restarting process!',
                         reset: true
                     });
                 }
@@ -113,7 +114,11 @@ function iterate(pageId, record, stage) {
             }
             //On last loop succeed, if not iterate.
             if (stage === numberOfStages) {
-                pageMakerPromises[record.numeroDocumento].resolve({msg: 'success', strikingData: processResolution.strikingData});
+                pageMakerPromises[record.numeroDocumento].resolve({
+                    msg: 'success',
+                    strikingData: processResolution.strikingData
+                });
+                await pages[pageId].page.screenshot({path: pageId + '.png'});
                 setTimeout(() => {
                     logger.debug('Closing page: ' + pageId)
                     pages[pageId].page.close();

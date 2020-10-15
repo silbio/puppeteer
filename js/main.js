@@ -3,29 +3,6 @@ const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 
-//Cron
-const CronJob = require('cron').CronJob;
-const scheduledStart = new CronJob('00 00 6 * * *', function () {
-    console.log('Cron scheduledStart starting app!');
-    start();
-}, null, true, 'Europe/Madrid');
-scheduledStart.start();
-
-const regularRestart = new CronJob('00 31 * * * *', function () {
-    console.log('Cron Regular Restart');
-    stop();
-    start();
-}, null, true, 'Europe/Madrid');
-regularRestart.start();
-
-//Express
-const express = require('express');
-const bodyParser = require('body-parser');
-const app = express();
-app.use(bodyParser.urlencoded({extended: true}));
-const port = 3000;
-app.use('/healthcheck', require('express-healthcheck')());
-
 //Utils
 const {v4: uuidv4} = require('uuid');
 const path = require('path');
@@ -33,6 +10,8 @@ global.simSlots = {
     'slot0': {locked: false, phoneNumber: '644354712', smsCode: null},
     'slot1': {locked: false, phoneNumber: '644378714', smsCode: null}
 };
+global.appStarted = false;
+global.tryInterval = 2000;
 const utils = require('./utils');
 
 //Logging
@@ -50,7 +29,7 @@ log4js.configure({
             type: 'file',
             filename: path.join(__dirname, '../logs/application.log'),
             maxLogSize: 2097152,
-            backups: 3,
+            backups: 10,
             compress: true,
             layout: {
                 type: 'pattern',
@@ -66,6 +45,32 @@ log4js.configure({
 global.logger = log4js.getLogger();
 logger.level = 'debug';
 
+//Cron
+const CronJob = require('cron').CronJob;
+const scheduledStart = new CronJob('00 00 6 * * *', function () {
+    logger.info('Cron scheduledStart starting app!');
+    start();
+}, null, true, 'Europe/Madrid');
+scheduledStart.start();
+
+const regularRestart = new CronJob('00 31 * * * *', function () {
+    if (global.appStarted) {
+        logger.info('Cron Regular Restart');
+        stop();
+        start();
+    } else {
+        logger.info('Restart scheduled but app is not started ')
+    }
+}, null, true, 'Europe/Madrid');
+regularRestart.start();
+
+//Express
+const express = require('express');
+const bodyParser = require('body-parser');
+const app = express();
+app.use(bodyParser.urlencoded({extended: true}));
+const port = 3000;
+app.use('/healthcheck', require('express-healthcheck')());
 
 //Application modules
 const pageMaker = require('./pageMaker');
@@ -120,11 +125,10 @@ app.listen(port, () => {
 
 logger.debug('---------------------------- Application Initialized ----------------------------');
 
-
 start();
-
 //Get Initial data
 function start() {
+    global.appStarted = true;
     let auth;
     new Promise((resolve, reject) => {
         getData.init()
@@ -174,6 +178,7 @@ function start() {
 }
 
 function stop() {
+    global.appStarted = false;
     browser.close();
 }
 
@@ -195,6 +200,7 @@ async function makePages(record, pageId) {
 
             if (resolution.msg === 'success') {
                 // TODO => Create user DB with records and credits, and the module to handle them. At this point, mark PPI for deletion from DB after a quarantine.
+
                 logger.info('!!!!!!!!!!' + record.numeroDocumento + ' successfully finished!!!!!!!!!!');
                 let strikingData = resolution.strikingData || [];
                 for (let k = 0; k < strikingData.length; k++) {

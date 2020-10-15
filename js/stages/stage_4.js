@@ -7,7 +7,6 @@ module.exports = {
 
             let formPromise = new Promise(async (formResolve) => {
 
-                await pages[pageId].page.waitForSelector('#txtDesCitado');
                 await pages[pageId].page.click(`[name="rdbTipoDoc"][value="${record.tipoDocumento}"]`);
                 // Document Number field
                 await pages[pageId].page.focus('#txtIdCitado');
