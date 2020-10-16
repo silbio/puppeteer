@@ -36,7 +36,6 @@ module.exports = {
             .then((results) => {
                 mainResolve(results);
             }).catch(async (err) => {
-            await pages[pageId].page.close();
             mainReject(err);
         })
     }

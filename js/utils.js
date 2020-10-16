@@ -4,7 +4,9 @@ const antiCaptchaClientKey = '0024131b365903ca5f32c9b2b1baf9ed';
 let resolvedCaptchas = {}
 
 module.exports = {
-
+    getTimeStampInLocaLIso: () => {
+        return (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().slice(0, -1)
+    },
     getProcessEnumOrName: (processId) => {
         const processes = {
             0: 'POLICIA - RECOGIDA DE TARJETA DE IDENTIDAD DE EXTRANJERO (TIE)',
@@ -65,8 +67,8 @@ module.exports = {
             }, 1000);
         })
     },
-    waitForSms: (simSlot)=>{
-        return new Promise( resolve => {
+    waitForSms: (simSlot) => {
+        return new Promise(resolve => {
             let smsInterval = setInterval(async () => {
                 if (simSlots[simSlot].smsCode) {
                     clearInterval(smsInterval);

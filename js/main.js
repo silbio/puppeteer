@@ -2,6 +2,8 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
+const PuppeteerHar = require('puppeteer-har')
+
 
 //Utils
 const {v4: uuidv4} = require('uuid');
@@ -70,6 +72,7 @@ const bodyParser = require('body-parser');
 const app = express();
 app.use(bodyParser.urlencoded({extended: true}));
 const port = 3000;
+//TODO => Add number of active pages to healthcheck page, as well as the number of scheduled restarts
 app.use('/healthcheck', require('express-healthcheck')());
 
 //Application modules
@@ -125,7 +128,8 @@ app.listen(port, () => {
 
 logger.debug('---------------------------- Application Initialized ----------------------------');
 
- //start();
+start();
+
 //Get Initial data
 function start() {
     appStarted = true;
@@ -189,7 +193,8 @@ async function makePages(record, pageId) {
     let context = await browser.createIncognitoBrowserContext();
     let page = await context.newPage();
     pages[pageId] = {page: page};
-
+    pages[pageId].har = new PuppeteerHar(pages[pageId].page);
+    await pages[pageId].har.start({path: './logs/hars/' + utils.getTimeStampInLocaLIso() + '_pageId_.har'});
     logger.info('pageId ' + pageId + ' assigned to ' + record.nombres);
     new Promise((resolve, reject) => {
 
@@ -212,7 +217,7 @@ async function makePages(record, pageId) {
 
         if (err.reset) {
             logger.warn(pageId + ' reset' + (err.name === 'TimeoutError' ? ' due to a page timeout.' : ' due to error: ' + err.message));
-            pages[pageId].page.waitForTimeout(tryInterval).then(()=>{
+            pages[pageId].page.waitForTimeout(tryInterval).then(() => {
                 logger.info('Waited for ' + tryInterval + '. Now restarting.')
                 makePages(record, pageId);
             });

@@ -84,6 +84,10 @@ function iterate(pageId, record, stage) {
 
             stage++;
 
+            if (stage > 6) {
+                await pages[pageId].page.screenshot({path: 'screenshots/' + utils.getTimeStampInLocaLIso() + '_stage_' + stage + '_' + pageId + '.png'});
+            }
+
             let pageUrl = navigationResolution._url.split(/[?;]/)[0];
             let successUrls = stageSuccessCriteria[stage].urls;
             let successUrlIsValid = successUrls.includes(pageUrl);
@@ -103,27 +107,30 @@ function iterate(pageId, record, stage) {
                         msg: 'success',
                         strikingData: processResolution.strikingData
                     });
-                    await pages[pageId].page.screenshot({path:'screenshots/success-'+ pageId + '.png'});
+                    await pages[pageId].page.screenshot({path: 'screenshots/success-' + pageId + '.png'});
+                    logger.info('HAR File recorded for pageId: ' + pageId);
+                    await pages[pageId].har.stop();
                     setTimeout(() => {
-                        logger.debug('Closing page: ' + pageId)
+                        logger.debug('Closing page: ' + pageId);
                         pages[pageId].page.close();
                     }, 10000)
                 } else {
                     iterate(pageId, record, stage);
                 }
             } else {
-                if (stage > 6) {
-                    let timestamp = (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().slice(0, -1)
-                    await pages[pageId].page.screenshot({path: 'screenshots/' + timestamp  + '_stage_' + stage + '_' + pageId + '.png'});
+                logger.debug('Closing page: ' + pageId);
+                if (stage > 7) {
+                    logger.info('HAR File recorded for pageId: ' + pageId);
+                    await pages[pageId].har.stop();
                 }
-            //    if(stage !== 7){
-                    pageMakerPromises[record.numeroDocumento].reject({
-                        message:
-                            (!successUrlIsValid ? 'Resulting Url for stage ' + stage + ' is not one of ' + successUrls + '. It is ' + pageUrl + ' instead. /n' : '') +
-                            (!matchesStageTraits ? 'Page traits for stage ' + stage + ' do not match success page configuration for session ' + pageId : ''),
-                        reset: true
-                    });
-              //  }
+                await pages[pageId].page.close();
+                pageMakerPromises[record.numeroDocumento].reject({
+                    message:
+                        (!successUrlIsValid ? 'Resulting Url for stage ' + stage + ' is not one of ' + successUrls + '. It is ' + pageUrl + ' instead. /n' : '') +
+                        (!matchesStageTraits ? 'Page traits for stage ' + stage + ' do not match success page configuration for session ' + pageId : ''),
+                    reset: true
+                });
+
 
             }
 
