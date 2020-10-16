@@ -1,6 +1,7 @@
 module.exports = {
     async run(pageId, record, resolve, reject) {
         try {
+            logger.info('Appointment found for ' + pageId + ', filling form,');
             await pages[pageId].page.focus('#txtTelefonoCitado');
             await pages[pageId].page.keyboard.type(record.telefono);
             await pages[pageId].page.focus('#emailUNO');

@@ -10,8 +10,8 @@ global.simSlots = {
     'slot0': {locked: false, phoneNumber: '644354712', smsCode: null},
     'slot1': {locked: false, phoneNumber: '644378714', smsCode: null}
 };
-global.appStarted = false;
-global.tryInterval = 2000;
+let appStarted = false;
+const tryInterval = 5000;
 const utils = require('./utils');
 
 //Logging
@@ -47,14 +47,14 @@ logger.level = 'debug';
 
 //Cron
 const CronJob = require('cron').CronJob;
-const scheduledStart = new CronJob('00 00 6 * * *', function () {
+const scheduledStart = new CronJob('00 00 5 * * *', function () {
     logger.info('Cron scheduledStart starting app!');
     start();
 }, null, true, 'Europe/Madrid');
 scheduledStart.start();
 
 const regularRestart = new CronJob('00 31 * * * *', function () {
-    if (global.appStarted) {
+    if (appStarted) {
         logger.info('Cron Regular Restart');
         stop();
         start();
@@ -125,10 +125,10 @@ app.listen(port, () => {
 
 logger.debug('---------------------------- Application Initialized ----------------------------');
 
-start();
+ //start();
 //Get Initial data
 function start() {
-    global.appStarted = true;
+    appStarted = true;
     let auth;
     new Promise((resolve, reject) => {
         getData.init()
@@ -178,7 +178,7 @@ function start() {
 }
 
 function stop() {
-    global.appStarted = false;
+    appStarted = false;
     browser.close();
 }
 
@@ -211,8 +211,12 @@ async function makePages(record, pageId) {
         }).catch(err => {
 
         if (err.reset) {
-            logger.warn(pageId + ' reset' + (err.name === 'TimeoutError' ? ' due to a page timeout.' : ' due to error: ' + err.message + '.'))
-            makePages(record, pageId);
+            logger.warn(pageId + ' reset' + (err.name === 'TimeoutError' ? ' due to a page timeout.' : ' due to error: ' + err.message));
+            pages[pageId].page.waitForTimeout(tryInterval).then(()=>{
+                logger.info('Waited for ' + tryInterval + '. Now restarting.')
+                makePages(record, pageId);
+            });
+
         } else {
             logger.error(err);
         }

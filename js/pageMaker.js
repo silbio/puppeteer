@@ -4,7 +4,7 @@ const stages = require("./stages");
 module.exports = {
     async make(pageId, record, mainResolve, mainReject) {
 
-        utils.fetchCaptcha(pageId).catch((err)=>{
+        utils.fetchCaptcha(pageId).catch((err) => {
             mainReject(err);
         });
 
@@ -19,7 +19,7 @@ module.exports = {
             logger.debug('Confirm box: ' + clickResult);
         });
         await pages[pageId].page.setDefaultNavigationTimeout(process.env.NODE_ENV === 'development' ? 30000 : 60000);
-       await pages[pageId].page.setRequestInterception(true);
+        await pages[pageId].page.setRequestInterception(true);
         pages[pageId].page.on('request', (request) => {
             if (['image', 'stylesheet', 'font'].indexOf(request.resourceType()) !== -1) {
                 request.abort();
@@ -35,8 +35,8 @@ module.exports = {
         }))
             .then((results) => {
                 mainResolve(results);
-            }).catch((err) => {
-            pages[pageId].page.close();
+            }).catch(async (err) => {
+            await pages[pageId].page.close();
             mainReject(err);
         })
     }

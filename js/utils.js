@@ -158,7 +158,7 @@ module.exports = {
     },
     getSolvedCaptcha(pageId, resolve) {
         if (resolvedCaptchas[pageId]) {
-            resolve(resolvedCaptchas[pageId]);
+            resolve(resolvedCaptchas[pageId].code);
 
         } else {
             setTimeout(() => {

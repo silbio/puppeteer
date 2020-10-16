@@ -4,6 +4,7 @@ const utils = require("../utils");
 let processes = [];
 let numberOfStages = 0;
 let stageSuccessCriteria = [
+    {},
     {
         urls: ['https://sede.administracionespublicas.gob.es/icpplus/index.html'],
         idTraits: {selector: 'select[id="form"]', contents: 'barcelona'}
@@ -18,7 +19,7 @@ let stageSuccessCriteria = [
     },
     {
         urls: ['https://sede.administracionespublicas.gob.es/icpplus/acEntrada', 'https://sede.administracionespublicas.gob.es/icpplustieb/acEntrada'],
-        idTraits: {selector: 'select[id="txtPaisNac"]', contents: 'apatrida'}
+        idTraits: {selector: 'input[id="txtDesCitado"]', contents: ''}
     },
     {
         urls: ['https://sede.administracionespublicas.gob.es/icpplus/acValidarEntrada', 'https://sede.administracionespublicas.gob.es/icpplustieb/acValidarEntrada'],
@@ -34,15 +35,15 @@ let stageSuccessCriteria = [
     },
     {
         urls: ['https://sede.administracionespublicas.gob.es/icpplus/acOfertarCita', 'https://sede.administracionespublicas.gob.es/icpplustieb/acOfertarCita'],
-        idTraits: {selector: 'label[for="txtTelefonoCitado"]', contents: 'telefono'}
-    },
-    {
-        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acVerificarCita', 'https://sede.administracionespublicas.gob.es/icpplustieb/acVerificarCita'],
         idTraits: {selector: 'form[action^="acVerificarCita"]', contents: ''}
     },
     {
-        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acGrabarCita', 'https://sede.administracionespublicas.gob.es/icpplustieb/acGrabarCita'],
+        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acVerificarCita', 'https://sede.administracionespublicas.gob.es/icpplustieb/acVerificarCita'],
         idTraits: {selector: 'input[id="txtCodigoVerificacion"]', contents: ''}
+    },
+    {
+        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acGrabarCita', 'https://sede.administracionespublicas.gob.es/icpplustieb/acGrabarCita'],
+        idTraits: {selector: 'span[id="justificanteFinal"]', contents: ''}
     }
 ]
 // let errorPages = [
@@ -59,7 +60,6 @@ require("fs").readdirSync(normalizedPath).forEach(function (file) {
 let pageMakerPromises = {}
 
 function init(pageId, record, resolve, reject) {
-    pages[pageId].lastPage = '';
     pages[pageId].reloadCounter = 0;
     iterate(pageId, record, 0);
     pageMakerPromises[record.numeroDocumento] = {resolve: resolve, reject: reject}
@@ -79,68 +79,61 @@ function iterate(pageId, record, stage) {
         .then(async (results) => {
             //Get resolutions
             let processResolution = results[0];
+            let navigationResolution = results[1];
             logger.debug('Stage ' + stage + ' for pageId ' + pageId + ' finished with resolution: ' + processResolution.msg + '.');
 
-            let stageReloaded = false;
-            let navigationResolution = results[1];
-            if(!navigationResolution && process.env.NODE_ENV === 'development'){
-                debugger;
-            }
+            stage++;
+
             let pageUrl = navigationResolution._url.split(/[?;]/)[0];
             let successUrls = stageSuccessCriteria[stage].urls;
             let successUrlIsValid = successUrls.includes(pageUrl);
             logger.debug('stage:' + stage + '/' + (numberOfStages - 1), 'pageId: ' + pageId, 'pageUrl: ' + pageUrl, 'successUrls: ' + successUrls);
 
-            //Check against the previous stage traits - If URL is the same or if id object is the same, it's a reloaded stage
-            let matchPreviousStageTraits = stage === 0 ? false : await utils.checkPageIdTraits(pageId, stageSuccessCriteria[(stage - 1)].idTraits.selector, stageSuccessCriteria[(stage - 1)].idTraits.contents);
-            if (pageUrl === pages[pageId].lastPage || matchPreviousStageTraits) {
-                stageReloaded = true;
-                pages[pageId].reloadCounter++;
-                logger.debug('Stage ' + stage + ' was reloaded for pageId ' + pageId + '. Previous page traits matched: ' + matchPreviousStageTraits);
-                if (pages[pageId].reloadCounter === 10) {
-                    pages[pageId].reloadCounter = 0;
+            //Check if page is correct by matching traits
+            let matchesStageTraits = await utils.checkPageIdTraits(pageId, stageSuccessCriteria[stage].idTraits.selector, stageSuccessCriteria[stage].idTraits.contents);
+
+
+            //Bump up stage if URL is valid success
+            if (successUrlIsValid && matchesStageTraits) {
+
+                pages[pageId].reloadCounter = 0;
+                //On last loop succeed, if not iterate.
+                if (stage === numberOfStages) {
+                    pageMakerPromises[record.numeroDocumento].resolve({
+                        msg: 'success',
+                        strikingData: processResolution.strikingData
+                    });
+                    await pages[pageId].page.screenshot({path:'screenshots/success-'+ pageId + '.png'});
+                    setTimeout(() => {
+                        logger.debug('Closing page: ' + pageId)
+                        pages[pageId].page.close();
+                    }, 10000)
+                } else {
+                    iterate(pageId, record, stage);
+                }
+            } else {
+                if (stage > 6) {
+                    let timestamp = (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().slice(0, -1)
+                    await pages[pageId].page.screenshot({path: 'screenshots/' + timestamp  + '_stage_' + stage + '_' + pageId + '.png'});
+                }
+            //    if(stage !== 7){
                     pageMakerPromises[record.numeroDocumento].reject({
-                        message: 'Reloads exhausted on stage' + stage + ' for pageId ' + pageId + ', restarting process!',
+                        message:
+                            (!successUrlIsValid ? 'Resulting Url for stage ' + stage + ' is not one of ' + successUrls + '. It is ' + pageUrl + ' instead. /n' : '') +
+                            (!matchesStageTraits ? 'Page traits for stage ' + stage + ' do not match success page configuration for session ' + pageId : ''),
                         reset: true
                     });
-                }
-            }
-            pages[pageId].lastPage = pageUrl;
+              //  }
 
-            //~Bump up stage if URL is valid success
-            if (successUrlIsValid && !stageReloaded) {
-                stage++;
-                pages[pageId].reloadCounter = 0;
-            }
-            //On last loop succeed, if not iterate.
-            if (stage === numberOfStages) {
-                pageMakerPromises[record.numeroDocumento].resolve({
-                    msg: 'success',
-                    strikingData: processResolution.strikingData
-                });
-                await pages[pageId].page.screenshot({path: pageId + '.png'});
-                setTimeout(() => {
-                    logger.debug('Closing page: ' + pageId)
-                    pages[pageId].page.close();
-                }, 10000)
-            } else {
-                iterate(pageId, record, stage);
             }
 
-            // If the URL isn't valid and the page wasn't reloaded, reject.
-            if (!successUrlIsValid && !stageReloaded) {
-                pageMakerPromises[record.numeroDocumento].reject({
-                    message: 'Resulting Url for stage ' + stage + ' is not one of ' + successUrls + '. It is ' + pageUrl + ' instead.',
-                    reset: true
-                });
-            }
 
         }).catch((err) => {
 
         pageMakerPromises[record.numeroDocumento].reject(
             {
                 message: `
-                Error running stage ${stage}.
+                Error running stage ${stage} for pageId ${pageId}.
                 Error Message: 
                     ${err.message}`,
                 stack: err.stack,

@@ -3,7 +3,6 @@ const utils = require('../utils');
 module.exports = {
     async run(pageId, record, resolve, reject) {
         try {
-            await pages[pageId].page.screenshot({path: 'stage8_' + pageId + '.png'});
             if (await pages[pageId].page.$('[name="rdbCita"]') !== null) {
                 await pages[pageId].page.click('[name="rdbCita"][value="1"]');
 
