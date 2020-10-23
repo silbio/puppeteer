@@ -1,8 +1,8 @@
 const axios = require('axios');
 const antiCaptchaClientKey = '0024131b365903ca5f32c9b2b1baf9ed';
 
-let resolvedCaptchas = {}
-
+let resolvedCaptchas = {};
+let resolvingCaptchas = [];
 module.exports = {
     getTimeStampInLocaLIso: () => {
         return (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().slice(0, -1)
@@ -99,61 +99,56 @@ module.exports = {
     },
     fetchCaptcha: (pageId) => {
         return new Promise((resolve, reject) => {
-            logger.info('Captcha for pageId: ' + pageId + ' requested.')
-            axios.post('http://api.anti-captcha.com/createTask', {
-                'clientKey': antiCaptchaClientKey,
-                'task':
-                    {
-                        'type': 'NoCaptchaTaskProxyless',
-                        'websiteURL': 'https://sede.administracionespublicas.gob.es/icpplustieb/acValidarEntrada',
-                        'websiteKey': '6Ld3FzoUAAAAANGzDQ-ZfwyAArWaG2Ae15CGxkKt',
-                        'userAgent': userAgent
-                    }
-            })
-                .then((response) => {
+            logger.debug('Captcha for pageId: ' + pageId + ' requested.');
+            if (resolvedCaptchas[pageId] || resolvingCaptchas.includes(pageId)) {
+                resolve(resolvedCaptchas[pageId]);
+            } else {
+                axios.post('http://api.anti-captcha.com/createTask', {
+                    'clientKey': antiCaptchaClientKey,
+                    'task':
+                        {
+                            'type': 'NoCaptchaTaskProxyless',
+                            'websiteURL': 'https://sede.administracionespublicas.gob.es/icpplustieb/acValidarEntrada',
+                            'websiteKey': '6Ld3FzoUAAAAANGzDQ-ZfwyAArWaG2Ae15CGxkKt',
+                            'userAgent': userAgent
+                        }
+                })
+                    .then((response) => {
 
-                    let taskId = response.data.taskId
-                    let errorId = response.data.errorId;
-                    if (taskId) {
-                        logger.debug('Captcha service for task Id: ' + taskId + ' for pageId ' + pageId);
-                        new Promise((pollResolve, pollReject) => {
-                            logger.debug('Polling for captcha solution started for pageId ' + pageId);
-                            pollTask(taskId, 0, pollResolve, pollReject, pageId)
-                        }).then((solvedCaptcha) => {
-                            resolvedCaptchas[pageId] = {
-                                code: solvedCaptcha, timestamp: new Date().getTime()
-                            };
+                        let taskId = response.data.taskId
+                        let errorId = response.data.errorId;
+                        if (taskId) {
+                            logger.debug('Captcha service for task Id: ' + taskId + ' for pageId ' + pageId);
+                            pages[pageId].taskId = taskId;
+                            new Promise((pollResolve, pollReject) => {
+                                logger.debug('Polling for captcha solution started for pageId ' + pageId);
+                                pollTask(taskId, 0, pollResolve, pollReject, pageId)
+                            }).then((solvedCaptcha) => {
+                                let resolvedCaptchaIndex = resolvingCaptchas.indexOf(pageId);
+                                resolvingCaptchas.splice(resolvedCaptchaIndex, 1);
+                                resolvedCaptchas[pageId] = {
+                                    code: solvedCaptcha, timestamp: new Date().getTime()
+                                };
+                                resolve(resolvedCaptchas[pageId]);
 
-                        }).catch((err) => {
+                            }).catch((err) => {
 
-                            reject({message: err, reset: true});
+                                reject({message: err, reset: true});
 
-                        });
-                    } else if (errorId) {
-                        reject({
-                            message: `${errorId} - 
+                            });
+                        } else if (errorId) {
+                            reject({
+                                message: `${errorId} - 
                         ${response.data.errorCode} -  
                         ${response.data.errorDescription}`, reset: true
-                        });
-
-                    }
-
-                })
-                .catch(error => {
-
-                    reject({message: error, reset: true})
-                });
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        reject({message: error, reset: true})
+                    });
+            }
         })
-    },
-    checkPageIdTraits: async (pageId, selector, expectedContent) => {
-        try {
-            let element = await pages[pageId].page.$(selector);
-            let elementProperty = await element.getProperty('innerText');
-            let elementContent = elementProperty._remoteObject.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            return elementContent.indexOf(expectedContent) > -1
-        } catch (e) {
-            return false;
-        }
     },
     removeSolvedCaptcha(pageId) {
         delete resolvedCaptchas[pageId]
@@ -168,10 +163,34 @@ module.exports = {
             }, 500)
         }
 
+    },
+    reportIncorrectRecaptcha(taskId){
+        axios.post('https://api.anti-captcha.com/reportIncorrectRecaptcha', {
+            'clientKey': antiCaptchaClientKey,
+            "taskId": taskId
+        })
+            .then((response) => {
+                logger.info('ReCaptcha failure reported with result: ' + JSON.stringify(response.data));
+            });
+
+    },
+    checkPageIdTraits: async (pageId, selector, expectedContent) => {
+        try {
+            let element = await pages[pageId].page.$(selector);
+            let elementProperty = await element.getProperty('innerText');
+            let elementContent = elementProperty._remoteObject.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return elementContent.indexOf(expectedContent) > -1
+        } catch (e) {
+            return false;
+        }
     }
 }
 
 function pollTask(taskId, attempt, resolve, reject, pageId) {
+    if(!global.appStarted){
+        reject('App not started, probably mid-restart.');
+        return false;
+    }
     axios.post('https://api.anti-captcha.com/getTaskResult',
         {
             'clientKey': antiCaptchaClientKey,

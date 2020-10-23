@@ -7,7 +7,10 @@ module.exports = {
                 await pages[pageId].page.click('[name="rdbCita"][value="1"]');
 
                 utils.waitForSimLock(record.simSlot).then(async () => {
-                    await pages[pageId].page.click('#btnSiguiente');
+                    await pages[pageId].page.evaluate(
+                        () => {
+                            window.envia();
+                        });
                     resolve({msg: 'Stage 8 done!'});
                 })
 
@@ -24,12 +27,12 @@ module.exports = {
 
 
             } else {
-                reject({message: 'Turn taken before reservation.', reset: true});
+                reject({message: 'Necessary selectors for stage 8 are missing. Loop detection failed.', reset: true});
             }
 
 
         } catch (err) {
-            reject({message: err, reset: false});
+            reject({message: err, reset: true});
         }
 
     }

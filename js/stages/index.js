@@ -4,46 +4,89 @@ const utils = require("../utils");
 let processes = [];
 let numberOfStages = 0;
 let stageSuccessCriteria = [
-    {},
+    {
+        urls: ['https://sede.administracionespublicas.gob.es/pagina/index/directorio/icpplus'],
+        idTraits: {selector: 'input[id="submit"]', contents: ''},
+        stage: 0
+    },
     {
         urls: ['https://sede.administracionespublicas.gob.es/icpplus/index.html'],
-        idTraits: {selector: 'select[id="form"]', contents: 'barcelona'}
+        idTraits: {selector: 'select[id="form"]', contents: 'barcelona'},
+        stage: 1
     },
     {
-        urls: ['https://sede.administracionespublicas.gob.es/icpplustie/citar', 'https://sede.administracionespublicas.gob.es/icpplus/citar'],
-        idTraits: {selector: 'select[id="tramiteGrupo[0]"]', contents: 'despliegue'}
+        urls: ['https://sede.administracionespublicas.gob.es/icpplustie/citar',
+            'https://sede.administracionespublicas.gob.es/icpplus/citar',
+            'https://sede.administracionespublicas.gob.es/icpco/citar',
+            'https://sede.administracionespublicas.gob.es/icpplustiem/citar'],
+        idTraits: {selector: 'select[id="tramiteGrupo[0]"]', contents: 'despliegue'},
+        stage: 2
     },
     {
-        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acInfo', 'https://sede.administracionespublicas.gob.es/icpplustieb/acInfo'],
-        idTraits: {selector: 'form[action^="acEntrada"]', contents: ''}
+        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acInfo',
+            'https://sede.administracionespublicas.gob.es/icpplustieb/acInfo',
+            'https://sede.administracionespublicas.gob.es/icpplustiem/acInfo',
+            'https://sede.administracionespublicas.gob.es/icpco/acInfo',
+            'https://sede.administracionespublicas.gob.es/icpplustie/acInfo'],
+        idTraits: {selector: 'form[action^="acEntrada"]', contents: ''},
+        stage: 3
     },
     {
-        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acEntrada', 'https://sede.administracionespublicas.gob.es/icpplustieb/acEntrada'],
-        idTraits: {selector: 'input[id="txtDesCitado"]', contents: ''}
+        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acEntrada',
+            'https://sede.administracionespublicas.gob.es/icpplustieb/acEntrada',
+            'https://sede.administracionespublicas.gob.es/icpplustiem/acEntrada',
+            'https://sede.administracionespublicas.gob.es/icpco/acEntrada'
+        ],
+        idTraits: {selector: 'input[id="txtDesCitado"]', contents: ''},
+        stage: 4
     },
     {
-        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acValidarEntrada', 'https://sede.administracionespublicas.gob.es/icpplustieb/acValidarEntrada'],
-        idTraits: {selector: 'input[id="btnConsultar"]', contents: ''}
+        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acValidarEntrada',
+            'https://sede.administracionespublicas.gob.es/icpplustieb/acValidarEntrada'],
+        idTraits: {selector: 'input[id="btnConsultar"]', contents: ''},
+        stage: 5
     },
     {
-        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acCitar', 'https://sede.administracionespublicas.gob.es/icpplustieb/acCitar'],
-        idTraits: {selector: 'select[id="idSede"]', contents: ''}
+        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acCitar',
+            'https://sede.administracionespublicas.gob.es/icpplustieb/acCitar',
+            'https://sede.administracionespublicas.gob.es/icpplustiem/acCitar',
+            'https://sede.administracionespublicas.gob.es/icpco/acCitar'
+        ],
+        idTraits: {selector: 'select[id="idSede"]', contents: ''},
+        stage: 6
     },
     {
-        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acVerFormulario', 'https://sede.administracionespublicas.gob.es/icpplustieb/acVerFormulario'],
-        idTraits: {selector: 'input[id="txtTelefonoCitado"]', contents: ''}
+        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acVerFormulario',
+            'https://sede.administracionespublicas.gob.es/icpplustieb/acVerFormulario'],
+        idTraits: {selector: 'input[id="txtTelefonoCitado"]', contents: ''},
+        stage: 7
     },
     {
-        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acOfertarCita', 'https://sede.administracionespublicas.gob.es/icpplustieb/acOfertarCita'],
-        idTraits: {selector: 'form[action^="acVerificarCita"]', contents: ''}
+        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acOfertarCita',
+            'https://sede.administracionespublicas.gob.es/icpplustieb/acOfertarCita',
+            'https://sede.administracionespublicas.gob.es/icpplustiem/acOfertarCita',
+            'https://sede.administracionespublicas.gob.es/icpco/acOfertarCita'
+        ],
+        idTraits: {selector: 'form[action^="acVerificarCita"]', contents: ''},
+        stage: 8
     },
     {
-        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acVerificarCita', 'https://sede.administracionespublicas.gob.es/icpplustieb/acVerificarCita'],
-        idTraits: {selector: 'input[id="txtCodigoVerificacion"]', contents: ''}
+        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acVerificarCita',
+            'https://sede.administracionespublicas.gob.es/icpplustieb/acVerificarCita',
+            'https://sede.administracionespublicas.gob.es/icpplustiem/acVerificarCita',
+            'https://sede.administracionespublicas.gob.es/icpco/acVerificarCita',
+        ],
+        idTraits: {selector: 'input[id="txtCodigoVerificacion"]', contents: ''},
+        stage: 9
     },
     {
-        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acGrabarCita', 'https://sede.administracionespublicas.gob.es/icpplustieb/acGrabarCita'],
-        idTraits: {selector: 'span[id="justificanteFinal"]', contents: ''}
+        urls: ['https://sede.administracionespublicas.gob.es/icpplus/acGrabarCita',
+            'https://sede.administracionespublicas.gob.es/icpplustieb/acGrabarCita',
+            'https://sede.administracionespublicas.gob.es/icpplustiem/acGrabarCita',
+            'https://sede.administracionespublicas.gob.es/icpco/acGrabarCita',
+        ],
+        idTraits: {selector: 'span[id="justificanteFinal"]', contents: ''},
+        stage: 10
     }
 ]
 // let errorPages = [
@@ -68,6 +111,9 @@ function init(pageId, record, resolve, reject) {
 
 
 function iterate(pageId, record, stage) {
+    if(!global.appStarted){
+        return false;
+    }
     logger.debug('Iterating stage ' + stage + ' of pageId ' + pageId)
     let navPromise = pages[pageId].page.waitForNavigation();
     let processPromise = new Promise((resolve, reject) => {
@@ -85,7 +131,7 @@ function iterate(pageId, record, stage) {
             stage++;
 
             if (stage > 6) {
-                await pages[pageId].page.screenshot({path: 'screenshots/' + utils.getTimeStampInLocaLIso() + '_stage_' + stage + '_' + pageId + '.png'});
+                await pages[pageId].page.screenshot({path: 'logs/screenshots/' + utils.getTimeStampInLocaLIso() + '_stage_' + stage + '_' + pageId + '.png'});
             }
 
             let pageUrl = navigationResolution._url.split(/[?;]/)[0];
@@ -96,9 +142,19 @@ function iterate(pageId, record, stage) {
             //Check if page is correct by matching traits
             let matchesStageTraits = await utils.checkPageIdTraits(pageId, stageSuccessCriteria[stage].idTraits.selector, stageSuccessCriteria[stage].idTraits.contents);
 
+//Check for exceptions
 
+            if((successUrlIsValid && !matchesStageTraits && stage === 5)){
+                utils.removeSolvedCaptcha(pageId);
+                utils.reportIncorrectRecaptcha(pages[pageId].taskId);
+                logger.warn('Incorrect Captcha Provided to ' + pageId + ' from task ' + pages[pageId].taskId);
+                utils.fetchCaptcha(pageId).then(()=>{
+                    stage--;
+                    iterate(pageId, record, stage);
+                }).catch((err)=>{pageMakerPromises[record.numeroDocumento].reject(err)});
+            }
             //Bump up stage if URL is valid success
-            if (successUrlIsValid && matchesStageTraits) {
+           else if (successUrlIsValid && matchesStageTraits) {
 
                 pages[pageId].reloadCounter = 0;
                 //On last loop succeed, if not iterate.
@@ -107,13 +163,13 @@ function iterate(pageId, record, stage) {
                         msg: 'success',
                         strikingData: processResolution.strikingData
                     });
-                    await pages[pageId].page.screenshot({path: 'screenshots/success-' + pageId + '.png'});
+                    await pages[pageId].page.screenshot({path: 'logs/screenshots/success-' + pageId + '.png'});
                     logger.info('HAR File recorded for pageId: ' + pageId);
                     await pages[pageId].har.stop();
                     setTimeout(() => {
                         logger.debug('Closing page: ' + pageId);
                         pages[pageId].page.close();
-                    }, 10000)
+                    }, 5000)
                 } else {
                     iterate(pageId, record, stage);
                 }

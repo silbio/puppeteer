@@ -12,8 +12,8 @@ global.simSlots = {
     'slot0': {locked: false, phoneNumber: '644354712', smsCode: null},
     'slot1': {locked: false, phoneNumber: '644378714', smsCode: null}
 };
-let appStarted = false;
-const tryInterval = 5000;
+global.appStarted = false;
+const tryInterval = 2000;
 const utils = require('./utils');
 
 //Logging
@@ -29,7 +29,7 @@ log4js.configure({
         },
         file: {
             type: 'file',
-            filename: path.join(__dirname, '../logs/application.log'),
+            filename: path.join(__dirname, '../logs/' + utils.getTimeStampInLocaLIso() + '.log'),
             maxLogSize: 2097152,
             backups: 10,
             compress: true,
@@ -56,15 +56,17 @@ const scheduledStart = new CronJob('00 00 5 * * *', function () {
 scheduledStart.start();
 
 const regularRestart = new CronJob('00 31 * * * *', function () {
-    if (appStarted) {
+    if (global.appStarted) {
         logger.info('Cron Regular Restart');
-        stop();
-        start();
+        stop().then(() => {
+            start();
+        });
+
     } else {
         logger.info('Restart scheduled but app is not started ')
     }
 }, null, true, 'Europe/Madrid');
-regularRestart.start();
+//regularRestart.start();
 
 //Express
 const express = require('express');
@@ -98,9 +100,11 @@ app.get('/start', (req, res) => {
 
 app.get('/stop', (req, res) => {
     if (req.query.password === "kabalahMacarena") {
-        logger.info('Silb stopped remotely.')
+
         res.send('Stopping SILB');
-        stop();
+        stop().then(() => {
+            logger.info('Silb stopped remotely.')
+        });
     } else {
         res.sendStatus(401);
     }
@@ -149,7 +153,12 @@ function start() {
             });
     }).then(async (records) => {
 
-        global.browser = await puppeteer.launch({headless: process.env.NODE_ENV !== 'development'});
+        global.browser = await puppeteer.launch(
+            {
+                headless: process.env.NODE_ENV !== 'development',
+                slowMo: 100
+            }
+            );
         global.userAgent = await browser.userAgent();
         global.pages = {};
         let probingProvincesProcesses = [];
@@ -181,9 +190,18 @@ function start() {
     });
 }
 
-function stop() {
-    appStarted = false;
-    browser.close();
+async function stop() {
+    global.appStarted = false;
+    let browserPages = await browser.pages();
+    let numberOfPages = browserPages.length;
+    for (const page of browserPages) {
+        await page.close();
+        numberOfPages--
+        if (numberOfPages === 0) {
+            browser.close();
+        }
+    }
+    global.pages = {};
 }
 
 //Takes in pageId if possible (to maintain the same person with the same ID).
@@ -194,7 +212,7 @@ async function makePages(record, pageId) {
     let page = await context.newPage();
     pages[pageId] = {page: page};
     pages[pageId].har = new PuppeteerHar(pages[pageId].page);
-    await pages[pageId].har.start({path: './logs/hars/' + utils.getTimeStampInLocaLIso() + '_pageId_.har'});
+    await pages[pageId].har.start({path: './logs/hars/' + utils.getTimeStampInLocaLIso() + '_' + pageId + '_.har'});
     logger.info('pageId ' + pageId + ' assigned to ' + record.nombres);
     new Promise((resolve, reject) => {
 
@@ -223,7 +241,13 @@ async function makePages(record, pageId) {
             });
 
         } else {
-            logger.error(err);
+            if (!global.appStarted && (err.message.indexOf('Navigation failed because browser has disconnected!') > -1)) {
+                logger.debug('Page failure due to browser restart.');
+            } else {
+                logger.error(err);
+                pages[pageId].page.close();
+            }
+
         }
     });
 

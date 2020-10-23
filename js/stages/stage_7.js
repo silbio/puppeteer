@@ -12,6 +12,7 @@ module.exports = {
                 await pages[pageId].page.focus('#txtObservaciones');
                 await pages[pageId].page.keyboard.type(record.motivo);
             }
+
             await pages[pageId].page.click('#btnSiguiente');
             resolve({msg: 'Stage 7 done!'});
 
