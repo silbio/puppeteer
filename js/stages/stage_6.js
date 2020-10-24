@@ -1,9 +1,11 @@
+const utils = require('../utils')
+
 module.exports = {
     async run(pageId, record, resolve, reject) {
         try {
 
             if (process.env.NODE_ENV) {
-                await pages[pageId].page.screenshot({path: 'logs/screenshots/stage_6_success_-' + pageId + '.png'});
+                await pages[pageId].page.screenshot({path: 'logs/screenshots/' + utils.getTimeStampInLocaLIso() + '_stage_6_' + pageId + '.png'});
                 pages[pageId].page.$eval('#idSede', (officeSelect) => {
                     let officesString = '';
                     for (let i = 0; i < officeSelect.length; i++) {

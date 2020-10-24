@@ -12,7 +12,7 @@ module.exports = {
                 await pages[pageId].page.keyboard.type(simSlots[record.simSlot].smsCode);
                 simSlots[record.simSlot].locked = false;
                 //Final confirmation button, uncomment on prod
-               // await pages[pageId].page.click('#btnConfirmar')
+                await pages[pageId].page.click('#btnConfirmar')
                 if (record.probing) {
                     resolve({
                         msg: 'Stage 9 done with Probing data, initializing striking system.',

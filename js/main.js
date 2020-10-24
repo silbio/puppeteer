@@ -48,24 +48,24 @@ global.logger = log4js.getLogger();
 logger.level = 'debug';
 
 //Cron
-const CronJob = require('cron').CronJob;
-const scheduledStart = new CronJob('00 00 5 * * *', function () {
-    logger.info('Cron scheduledStart starting app!');
-    start();
-}, null, true, 'Europe/Madrid');
-scheduledStart.start();
+// const CronJob = require('cron').CronJob;
+// const scheduledStart = new CronJob('00 00 5 * * *', function () {
+//     logger.info('Cron scheduledStart starting app!');
+//     start();
+// }, null, true, 'Europe/Madrid');
+//scheduledStart.start();
 
-const regularRestart = new CronJob('00 31 * * * *', function () {
-    if (global.appStarted) {
-        logger.info('Cron Regular Restart');
-        stop().then(() => {
-            start();
-        });
-
-    } else {
-        logger.info('Restart scheduled but app is not started ')
-    }
-}, null, true, 'Europe/Madrid');
+// const regularRestart = new CronJob('00 31 * * * *', function () {
+//     if (global.appStarted) {
+//         logger.info('Cron Regular Restart');
+//         stop().then(() => {
+//             start();
+//         });
+//
+//     } else {
+//         logger.info('Restart scheduled but app is not started ')
+//     }
+// }, null, true, 'Europe/Madrid');
 //regularRestart.start();
 
 //Express
@@ -135,8 +135,16 @@ logger.debug('---------------------------- Application Initialized -------------
 start();
 
 //Get Initial data
-function start() {
+async function start() {
     appStarted = true;
+    global.browser = await puppeteer.launch(
+        {
+            headless: process.env.NODE_ENV !== 'development',
+            slowMo: 100
+        }
+    );
+
+    global.pages = {};
     let auth;
     new Promise((resolve, reject) => {
         getData.init()
@@ -153,14 +161,7 @@ function start() {
             });
     }).then(async (records) => {
 
-        global.browser = await puppeteer.launch(
-            {
-                headless: process.env.NODE_ENV !== 'development',
-                slowMo: 100
-            }
-            );
-        global.userAgent = await browser.userAgent();
-        global.pages = {};
+
         let probingProvincesProcesses = [];
         let probingData = [];
         let strikingData = {};
@@ -206,7 +207,7 @@ async function stop() {
 
 //Takes in pageId if possible (to maintain the same person with the same ID).
 async function makePages(record, pageId) {
-
+//TODO => Move bulk of this logic to page maker module
     pageId = pageId || await uuidv4();
     let context = await browser.createIncognitoBrowserContext();
     let page = await context.newPage();
@@ -214,6 +215,27 @@ async function makePages(record, pageId) {
     pages[pageId].har = new PuppeteerHar(pages[pageId].page);
     await pages[pageId].har.start({path: './logs/hars/' + utils.getTimeStampInLocaLIso() + '_' + pageId + '_.har'});
     logger.info('pageId ' + pageId + ' assigned to ' + record.nombres);
+
+    //Change user agent
+
+    let userAgentString = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36 FS';
+    await pages[pageId].page.setUserAgent(userAgentString);
+    await pages[pageId].page.evaluateOnNewDocument((userAgentString) => {
+        let open = window.open;
+
+        window.open = (...args)=>{
+            let newPage = open(...args);
+            Object.defineProperty(newPage.navigator, 'userAgent', {get: () => userAgentString});
+            return newPage;
+        }
+        window.open.toString = () => 'function open() { [native code] }'
+        Object.defineProperty(navigator, 'platform', {get: () => 'Win32'});
+        Object.defineProperty(navigator, 'productSub', {get: () => '20030107'});
+        Object.defineProperty(navigator, 'vendor', {get: () => 'Google Inc.'});
+        Object.defineProperty(navigator, 'oscpu', {get: () => undefined});
+        Object.defineProperty(navigator, 'cpuClass', {get: () => undefined});
+    },userAgentString);
+
     new Promise((resolve, reject) => {
 
 

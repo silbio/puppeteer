@@ -40,7 +40,7 @@ module.exports = {
                         logger.debug('Captcha Resolution Field Filled for PageId: ' + pageId);
                         resolve()
                     }).then(async () => {
-
+                        await pages[pageId].page.waitForTimeout(2000);
                         await pages[pageId].page.click('#btnEnviar');
 
 

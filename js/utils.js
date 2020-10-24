@@ -109,8 +109,7 @@ module.exports = {
                         {
                             'type': 'NoCaptchaTaskProxyless',
                             'websiteURL': 'https://sede.administracionespublicas.gob.es/icpplustieb/acValidarEntrada',
-                            'websiteKey': '6Ld3FzoUAAAAANGzDQ-ZfwyAArWaG2Ae15CGxkKt',
-                            'userAgent': userAgent
+                            'websiteKey': '6Ld3FzoUAAAAANGzDQ-ZfwyAArWaG2Ae15CGxkKt'
                         }
                 })
                     .then((response) => {

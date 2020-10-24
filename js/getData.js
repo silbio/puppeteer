@@ -1,8 +1,8 @@
 const {google} = require('googleapis');
 let privateKey = require("../res/privateKey.json");
 const spreadsheetId = '1LhpqxpRBJeE2ywUZtnkXyLuv74j3yKrM53VAxwDCUSA';
-const phoneNumbers = [simSlots.slot0.phoneNumber, simSlots.slot1.phoneNumber]
-const emails = ['turnmaker@silb.io', 'turnos@silb.io']
+const phoneNumbers = [simSlots.slot0.phoneNumber, simSlots.slot1.phoneNumber];
+const emails = ['turnmaker@silb.io', 'turnos@silb.io'];//['martinherrmann@yopmail.com', 'martaperezsol@yopmail.com'];
 
 
 function init() {

@@ -27,8 +27,8 @@ module.exports = {
                 request.continue();
             }
         });
+        //await pages[pageId].page.goto('https://i-know-you-faked-user-agent.glitch.me/new-window');
         await pages[pageId].page.goto('https://sede.administracionespublicas.gob.es/pagina/index/directorio/icpplus');
-
 
         new Promise(((stagesResolve, stagesReject) => {
             stages.init(pageId, record, stagesResolve, stagesReject)
