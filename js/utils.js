@@ -131,14 +131,12 @@ module.exports = {
                                 resolve(resolvedCaptchas[pageId]);
 
                             }).catch((err) => {
-                                let reset = true;
-                                if (!global.appStarted) {
-                                    reset = false;
-                                }
-                                reject({message: err, reset: reset});
+                                pages[pageId].page.close();
+                                reject({message: err, reset: true});
 
                             });
                         } else if (errorId) {
+                            pages[pageId].page.close();
                             reject({
                                 message: `${errorId} - 
                         ${response.data.errorCode} -  
@@ -189,10 +187,7 @@ module.exports = {
 }
 
 function pollTask(taskId, attempt, resolve, reject, pageId) {
-    if (!global.appStarted) {
-        reject('App not started, probably mid-restart.');
-        return false;
-    }
+
     axios.post('https://api.anti-captcha.com/getTaskResult',
         {
             'clientKey': antiCaptchaClientKey,
