@@ -4,7 +4,6 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 const PuppeteerHar = require('puppeteer-har')
 
-
 //Utils
 const {v4: uuidv4} = require('uuid');
 const path = require('path');
@@ -14,6 +13,8 @@ global.simSlots = {
 };
 global.appStarted = false;
 const tryInterval = 2000;
+const userAgentString = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36 FS';
+
 const utils = require('./utils');
 
 //Logging
@@ -48,12 +49,12 @@ global.logger = log4js.getLogger();
 logger.level = 'debug';
 
 //Cron
-// const CronJob = require('cron').CronJob;
-// const scheduledStart = new CronJob('00 00 5 * * *', function () {
-//     logger.info('Cron scheduledStart starting app!');
-//     start();
-// }, null, true, 'Europe/Madrid');
-//scheduledStart.start();
+const CronJob = require('cron').CronJob;
+const scheduledStart = new CronJob('00 00 5 * * *', function () {
+    logger.info('Cron scheduledStart starting app!');
+    start();
+}, null, true, 'Europe/Madrid');
+scheduledStart.start();
 
 // const regularRestart = new CronJob('00 31 * * * *', function () {
 //     if (global.appStarted) {
@@ -136,11 +137,15 @@ start();
 
 //Get Initial data
 async function start() {
+
     appStarted = true;
     global.browser = await puppeteer.launch(
         {
             headless: process.env.NODE_ENV !== 'development',
-            slowMo: 100
+            slowMo: 100,
+            args: [
+                `--user-agent=${userAgentString}`
+            ]
         }
     );
 
@@ -218,8 +223,9 @@ async function makePages(record, pageId) {
 
     //Change user agent
 
-    let userAgentString = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36 FS';
     await pages[pageId].page.setUserAgent(userAgentString);
+
+    //Change Navigator object values
     await pages[pageId].page.evaluateOnNewDocument((userAgentString) => {
         let open = window.open;
 
