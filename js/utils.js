@@ -131,8 +131,11 @@ module.exports = {
                                 resolve(resolvedCaptchas[pageId]);
 
                             }).catch((err) => {
-
-                                reject({message: err, reset: true});
+                                let reset = true;
+                                if (!global.appStarted) {
+                                    reset = false;
+                                }
+                                reject({message: err, reset: reset});
 
                             });
                         } else if (errorId) {
@@ -163,7 +166,7 @@ module.exports = {
         }
 
     },
-    reportIncorrectRecaptcha(taskId){
+    reportIncorrectRecaptcha(taskId) {
         axios.post('https://api.anti-captcha.com/reportIncorrectRecaptcha', {
             'clientKey': antiCaptchaClientKey,
             "taskId": taskId
@@ -186,7 +189,7 @@ module.exports = {
 }
 
 function pollTask(taskId, attempt, resolve, reject, pageId) {
-    if(!global.appStarted){
+    if (!global.appStarted) {
         reject('App not started, probably mid-restart.');
         return false;
     }

@@ -56,18 +56,12 @@ const scheduledStart = new CronJob('00 00 5 * * *', function () {
 }, null, true, 'Europe/Madrid');
 scheduledStart.start();
 
-// const regularRestart = new CronJob('00 31 * * * *', function () {
-//     if (global.appStarted) {
-//         logger.info('Cron Regular Restart');
-//         stop().then(() => {
-//             start();
-//         });
-//
-//     } else {
-//         logger.info('Restart scheduled but app is not started ')
-//     }
-// }, null, true, 'Europe/Madrid');
-//regularRestart.start();
+const regularRestart = new CronJob('00 31 * * * *', function () {
+  //TODO => Implement PM2 reload
+
+
+}, null, true, 'Europe/Madrid');
+regularRestart.start();
 
 //Express
 const express = require('express');
@@ -197,17 +191,7 @@ async function start() {
 }
 
 async function stop() {
-    global.appStarted = false;
-    let browserPages = await browser.pages();
-    let numberOfPages = browserPages.length;
-    for (const page of browserPages) {
-        await page.close();
-        numberOfPages--
-        if (numberOfPages === 0) {
-            browser.close();
-        }
-    }
-    global.pages = {};
+ //TODO => Implement stop with PM2
 }
 
 //Takes in pageId if possible (to maintain the same person with the same ID).
@@ -229,7 +213,7 @@ async function makePages(record, pageId) {
     await pages[pageId].page.evaluateOnNewDocument((userAgentString) => {
         let open = window.open;
 
-        window.open = (...args)=>{
+        window.open = (...args) => {
             let newPage = open(...args);
             Object.defineProperty(newPage.navigator, 'userAgent', {get: () => userAgentString});
             return newPage;
@@ -240,7 +224,7 @@ async function makePages(record, pageId) {
         Object.defineProperty(navigator, 'vendor', {get: () => 'Google Inc.'});
         Object.defineProperty(navigator, 'oscpu', {get: () => undefined});
         Object.defineProperty(navigator, 'cpuClass', {get: () => undefined});
-    },userAgentString);
+    }, userAgentString);
 
     new Promise((resolve, reject) => {
 
@@ -261,7 +245,7 @@ async function makePages(record, pageId) {
             }
         }).catch(err => {
 
-        if (err.reset) {
+        if (err.reset && global.appStarted) {
             logger.warn(pageId + ' reset' + (err.name === 'TimeoutError' ? ' due to a page timeout.' : ' due to error: ' + err.message));
             pages[pageId].page.waitForTimeout(tryInterval).then(() => {
                 logger.info('Waited for ' + tryInterval + '. Now restarting.')
@@ -269,7 +253,7 @@ async function makePages(record, pageId) {
             });
 
         } else {
-            if (!global.appStarted && (err.message.indexOf('Navigation failed because browser has disconnected!') > -1)) {
+            if (!global.appStarted) {
                 logger.debug('Page failure due to browser restart.');
             } else {
                 logger.error(err);

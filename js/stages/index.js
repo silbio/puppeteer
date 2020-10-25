@@ -111,9 +111,7 @@ function init(pageId, record, resolve, reject) {
 
 
 function iterate(pageId, record, stage) {
-    if(!global.appStarted){
-        return false;
-    }
+
     logger.debug('Iterating stage ' + stage + ' of pageId ' + pageId)
     let navPromise = pages[pageId].page.waitForNavigation();
     let processPromise = new Promise((resolve, reject) => {
@@ -123,6 +121,7 @@ function iterate(pageId, record, stage) {
 
     Promise.all([processPromise, navPromise])
         .then(async (results) => {
+
             //Get resolutions
             let processResolution = results[0];
             let navigationResolution = results[1];

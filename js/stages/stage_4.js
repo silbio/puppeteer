@@ -23,6 +23,10 @@ module.exports = {
                     await pages[pageId].page.focus('#txtAnnoCitado');
                     await pages[pageId].page.keyboard.type(record.anoNacimiento);
                 }
+                if (await pages[pageId].page.$('#txtFecha') !== null) {
+                    await pages[pageId].page.focus('#txtFecha');
+                    await pages[pageId].page.keyboard.type(record.caducidadTarjeta);
+                }
                 formResolve();
 
             }).then(() => {
