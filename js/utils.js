@@ -1,9 +1,34 @@
-const axios = require('axios');
-const antiCaptchaClientKey = '0024131b365903ca5f32c9b2b1baf9ed';
-
-let resolvedCaptchas = {};
-let resolvingCaptchas = [];
+const exec = require('child_process').exec;
 module.exports = {
+    getRandomPhoneNumber: () => {
+        let phones = ['644354712', '644378714'];
+        return phones[(Math.floor(Math.random() * phones.length))]
+    },
+    getRandomEmailAddress: () => {
+        let emails = ['extranjeros@yopmail.com', 'extranjeria@yopmail.com', 'turnos@yopmail.com', 'citaprevia@yopmail.com'];
+        return emails[(Math.floor(Math.random() * emails.length))]
+    },
+    getRandomAlphanumeric: (length, type) => {
+        let result = '';
+        let letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let numbers = '0123456789';
+        let characters = type === 'letters' ? letters : numbers;
+        let typeLength = characters.length;
+
+        for (let i = 0; i < length; i++) {
+            result += characters.charAt(Math.floor(Math.random() * typeLength));
+        }
+        return result;
+    },
+    getRandomNames: () => {
+        let names = ['Antonio', 'Manuel', 'Jose', 'Francisco', 'David', 'Juan', 'José Antonio', 'Javier', 'Daniel', 'José Luis', 'Francisco Javier', 'Carlos', 'Jesús', 'Alejandro', 'Miguel', 'José Manuel', 'Rafael', 'Miguel Ángel', 'Pedro', 'Pablo']
+        let surnames = ['García', 'Rodríguez', 'González', 'Fernández', 'López', 'Martínez', 'Sánchez', 'Pérez', 'Gómez', 'Martín', 'Jiménez', 'Ruiz', 'Hernández', 'Díaz', 'Moreno', 'Muñoz', 'Álvarez', 'Romero', 'Alonso', 'Gutiérrez']
+        return names[(Math.floor(Math.random() * names.length))] + ' ' + surnames[(Math.floor(Math.random() * surnames.length))] + ' ' + surnames[(Math.floor(Math.random() * surnames.length))];
+    },
+    getRandomCountry: () => {
+        let countries = ['ARGENTINA', 'BOLIVIA', 'CHILE', 'COLOMBIA', 'COSTA RICA', 'CUBA', 'DOMINICANA REPUBLICA', 'ECUADOR', 'EL SALVADOR', 'GUATEMALA', 'HONDURAS', 'MEJICO', 'NICARAGUA', 'PANAMA', 'PARAGUAY', 'PERU', 'URUGUAY', 'VENEZUELA']
+        return countries[(Math.floor(Math.random() * countries.length))]
+    },
     getTimeStampInLocaLIso: () => {
         return (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().slice(0, -1)
     },
@@ -55,6 +80,26 @@ module.exports = {
             }
         }
     },
+    getPhoneOrSimSlotNumber: (number) => {
+        //Get phone number from SIM slot
+        if (/^slot[01]$/.test(number)) {
+            return simSlots[number].phoneNumber;
+        } else {
+            //Get SIM slot from phone number
+            for (let simSlotDataPoint in simSlots) {
+                if (simSlotDataPoint.phoneNumber === number) {
+                    return number;
+                }
+            }
+        }
+    },
+    getOptionValueFromInnerText: async (pageId, selectId, textToFind) => {
+        const optionWanted = (
+            await pages[pageId].page.$x(`//*[@id = "${selectId}"]/option[text() = "${textToFind}"]`))[0];
+        return await (
+            await optionWanted.getProperty('value')
+        ).jsonValue();
+    },
     waitForSimLock: (simSlot) => {
         return new Promise(resolve => {
             let simLockInterval = setInterval(async () => {
@@ -77,103 +122,6 @@ module.exports = {
             }, 1000);
         })
     },
-    getPhoneOrSimSlotNumber: (number) => {
-        //Get phone number from SIM slot
-        if (/^slot[01]$/.test(number)) {
-            return simSlots[number].phoneNumber;
-        } else {
-            //Get SIM slot from phone number
-            for (let simSlotDataPoint in simSlots) {
-                if (simSlotDataPoint.phoneNumber === number) {
-                    return number;
-                }
-            }
-        }
-    },
-    getOptionValueFromInnerText: async (pageId, selectId, textToFind) => {
-        const optionWanted = (
-            await pages[pageId].page.$x(`//*[@id = "${selectId}"]/option[text() = "${textToFind}"]`))[0];
-        return await (
-            await optionWanted.getProperty('value')
-        ).jsonValue();
-    },
-    fetchCaptcha: (pageId) => {
-        return new Promise((resolve, reject) => {
-            logger.debug('Captcha for pageId: ' + pageId + ' requested.');
-            if (resolvedCaptchas[pageId] || resolvingCaptchas.includes(pageId)) {
-                resolve(resolvedCaptchas[pageId]);
-            } else {
-                axios.post('http://api.anti-captcha.com/createTask', {
-                    'clientKey': antiCaptchaClientKey,
-                    'task':
-                        {
-                            'type': 'NoCaptchaTaskProxyless',
-                            'websiteURL': 'https://sede.administracionespublicas.gob.es/icpplustieb/acValidarEntrada',
-                            'websiteKey': '6Ld3FzoUAAAAANGzDQ-ZfwyAArWaG2Ae15CGxkKt'
-                        }
-                })
-                    .then((response) => {
-
-                        let taskId = response.data.taskId
-                        let errorId = response.data.errorId;
-                        if (taskId) {
-                            logger.debug('Captcha service for task Id: ' + taskId + ' for pageId ' + pageId);
-                            pages[pageId].taskId = taskId;
-                            new Promise((pollResolve, pollReject) => {
-                                logger.debug('Polling for captcha solution started for pageId ' + pageId);
-                                pollTask(taskId, 0, pollResolve, pollReject, pageId)
-                            }).then((solvedCaptcha) => {
-                                let resolvedCaptchaIndex = resolvingCaptchas.indexOf(pageId);
-                                resolvingCaptchas.splice(resolvedCaptchaIndex, 1);
-                                resolvedCaptchas[pageId] = {
-                                    code: solvedCaptcha, timestamp: new Date().getTime()
-                                };
-                                resolve(resolvedCaptchas[pageId]);
-
-                            }).catch((err) => {
-                                pages[pageId].page.close();
-                                reject({message: err, reset: true});
-
-                            });
-                        } else if (errorId) {
-                            pages[pageId].page.close();
-                            reject({
-                                message: `${errorId} - 
-                        ${response.data.errorCode} -  
-                        ${response.data.errorDescription}`, reset: true
-                            });
-                        }
-                    })
-                    .catch(error => {
-                        reject({message: error, reset: true})
-                    });
-            }
-        })
-    },
-    removeSolvedCaptcha(pageId) {
-        delete resolvedCaptchas[pageId]
-    },
-    getSolvedCaptcha(pageId, resolve) {
-        if (resolvedCaptchas[pageId]) {
-            resolve(resolvedCaptchas[pageId].code);
-
-        } else {
-            setTimeout(() => {
-                this.getSolvedCaptcha(pageId, resolve);
-            }, 500)
-        }
-
-    },
-    reportIncorrectRecaptcha(taskId) {
-        axios.post('https://api.anti-captcha.com/reportIncorrectRecaptcha', {
-            'clientKey': antiCaptchaClientKey,
-            "taskId": taskId
-        })
-            .then((response) => {
-                logger.info('ReCaptcha failure reported with result: ' + JSON.stringify(response.data));
-            });
-
-    },
     checkPageIdTraits: async (pageId, selector, expectedContent) => {
         try {
             let element = await pages[pageId].page.$(selector);
@@ -183,30 +131,44 @@ module.exports = {
         } catch (e) {
             return false;
         }
+    },
+    connectVpn: () => {
+        //IP address randomization over ProtonVPN - Use visudo to allow user to run command as root.
+        return new Promise((resolve, reject) => {
+            let startVPN = exec("sudo protonvpn c -r", function (err, stdout, stderr) {
+                if (err) {
+                    logger.error(stderr);
+                }
+                console.log(stdout);
+            });
+
+            startVPN.on('exit', async (code) => {
+                if (code === 0) {
+                    resolve('VPN started successfully.');
+                } else {
+                    reject('VPN could not be started, exited with code: ' + code);
+
+                }
+            });
+        })
+    },
+    disconnectVpn: () => {
+        return new Promise((resolve, reject) => {
+            let stopVPN = exec("sudo protonvpn d", function (err, stdout, stderr) {
+                if (err) {
+                    logger.error(stderr);
+                }
+                logger.debug(stdout);
+            });
+
+            stopVPN.on('exit', (code) => {
+                if (code === 0) {
+                    resolve('VPN stopped successfully.');
+                } else {
+                    reject('VPN could not be stopped gracefully, exited with code: ' + code);
+                }
+            });
+        });
     }
 }
 
-function pollTask(taskId, attempt, resolve, reject, pageId) {
-
-    axios.post('https://api.anti-captcha.com/getTaskResult',
-        {
-            'clientKey': antiCaptchaClientKey,
-            'taskId': taskId
-        }).then(async (taskResponse) => {
-        let gRecaptchaStatus = taskResponse.data.status
-
-        if (gRecaptchaStatus === 'ready') {
-            logger.info('reCaptcha solution for ' + pageId + ' ready.')
-            resolve(taskResponse.data.solution.gRecaptchaResponse);
-        } else if (attempt > 30) {
-            reject('Too many polling tries for pageId: ' + pageId);
-        } else {
-            logger.debug(attempt + ' attempts to poll for pageId: ' + pageId);
-            attempt++;
-            setTimeout(() => {
-                pollTask(taskId, attempt, resolve, reject, pageId);
-            }, 1000)
-        }
-    })
-
-}

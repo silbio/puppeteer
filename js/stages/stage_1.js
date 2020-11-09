@@ -7,10 +7,11 @@ module.exports = {
             //    let btnAceptar = '#btnAceptar';
             let provinces = '#form'
             await pages[pageId].page.waitForSelector(provinces);
-            //  await pages[pageId].page.waitForSelector(btnAceptar);
             let optionValue = await utils.getOptionValueFromInnerText(pageId, 'form', record.provincia);
             await pages[pageId].page.select(`${provinces}`, optionValue);
-            //await pages[pageId].page.click(btnAceptar);
+            if (await pages[pageId].page.$('#cookie_action_close_header') !== null ) {
+                await pages[pageId].page.click('#cookie_action_close_header');
+            }
             await pages[pageId].page.evaluate(
                 () => {
                    window.envia();

@@ -1,12 +1,15 @@
 const utils = require('./utils');
+const captchaControl = require('./captchaControl')
 const stages = require("./stages");
 
 module.exports = {
     async make(pageId, record, mainResolve, mainReject) {
 
-        utils.fetchCaptcha(pageId).catch((err) => {
-            mainReject(err);
-        });
+        // if(!global.captchaServiceDown) {
+        //     captchaControl.request(pageId).catch((err) => {
+        //         mainReject(err);
+        //     });
+        // }
 
         pages[pageId].page.on('console', (msg) => {
             let msgText = msg.text();
@@ -21,7 +24,7 @@ module.exports = {
         await pages[pageId].page.setDefaultNavigationTimeout(process.env.NODE_ENV === 'development' ? 0 : 60000);
         await pages[pageId].page.setRequestInterception(true);
         pages[pageId].page.on('request', (request) => {
-            if (['image', 'stylesheet', 'font', 'icon'].indexOf(request.resourceType()) !== -1) {
+            if (['image', 'stylesheet', 'font', 'x-icon'].indexOf(request.resourceType()) !== -1) {
                 request.abort();
             } else {
                 request.continue();

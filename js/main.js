@@ -11,11 +11,14 @@ global.simSlots = {
     'slot0': {locked: false, phoneNumber: '644354712', smsCode: null},
     'slot1': {locked: false, phoneNumber: '644378714', smsCode: null}
 };
-global.appStarted = false;
+global.captchaServiceDown = false;
+global.endGame = false;
+
 const tryInterval = 2000;
 const userAgentString = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36 FS';
-
+const nodeEnv = process.env.NODE_ENV;
 const utils = require('./utils');
+
 
 //Logging
 const log4js = require("log4js");
@@ -48,20 +51,6 @@ log4js.configure({
 global.logger = log4js.getLogger();
 logger.level = 'debug';
 
-//Cron
-const CronJob = require('cron').CronJob;
-const scheduledStart = new CronJob('00 00 5 * * *', function () {
-    logger.info('Cron scheduledStart starting app!');
-    start();
-}, null, true, 'Europe/Madrid');
-scheduledStart.start();
-
-const regularRestart = new CronJob('00 31 * * * *', function () {
-  //TODO => Implement PM2 reload
-
-
-}, null, true, 'Europe/Madrid');
-regularRestart.start();
 
 //Express
 const express = require('express');
@@ -80,18 +69,19 @@ const getData = require('./getData');
 app.get('/', (req, res) => {
     res.send('Silb.io, Stand In Line Bot');
     logger.info('Home page hit!');
-})
-
+});
 
 app.get('/start', (req, res) => {
     if (req.query.password === "kabalahMacarena") {
-        logger.info('Silb started remotely.')
+
         res.send('Starting SILB');
-        start();
+        start().then(() => {
+            logger.info('Silb started remotely.');
+        });
     } else {
         res.sendStatus(401);
     }
-})
+});
 
 app.get('/stop', (req, res) => {
     if (req.query.password === "kabalahMacarena") {
@@ -103,7 +93,7 @@ app.get('/stop', (req, res) => {
     } else {
         res.sendStatus(401);
     }
-})
+});
 
 app.post('/sms', (req, res) => {
 
@@ -125,17 +115,22 @@ app.listen(port, () => {
     logger.info(`SILB listening at http://localhost:${port}`);
 });
 
-logger.debug('---------------------------- Application Initialized ----------------------------');
+logger.info('---------------------------- Application Initialized ----------------------------');
+logger.debug('Environment: ' + nodeEnv);
+if (process.argv.includes('autostart')) {
+    start().then(() => {
+        logger.info('Silb started automatically.');
+    });
+}
 
-start();
 
 //Get Initial data
 async function start() {
 
-    appStarted = true;
+    await utils.connectVpn();
     global.browser = await puppeteer.launch(
         {
-            headless: process.env.NODE_ENV !== 'development',
+            headless: nodeEnv !== 'development',
             slowMo: 100,
             args: [
                 `--user-agent=${userAgentString}`
@@ -191,8 +186,19 @@ async function start() {
 }
 
 async function stop() {
- //TODO => Implement stop with PM2
+    logger.warn('SILB Stopped.');
+    await utils.disconnectVpn();
+    process.exit(0);
+
 }
+
+process.on('exit', () => {
+    utils.disconnectVpn().then((result) => {
+        logger.info(result);
+    }).catch((err) => {
+        logger.error(err);
+    });
+})
 
 //Takes in pageId if possible (to maintain the same person with the same ID).
 async function makePages(record, pageId) {
@@ -245,20 +251,22 @@ async function makePages(record, pageId) {
             }
         }).catch(err => {
 
-        if (err.reset && global.appStarted) {
+        if (err.reset) {
             logger.warn(pageId + ' reset' + (err.name === 'TimeoutError' ? ' due to a page timeout.' : ' due to error: ' + err.message));
             pages[pageId].page.waitForTimeout(tryInterval).then(() => {
                 logger.info('Waited for ' + tryInterval + '. Now restarting.')
+                if (err.stage && err.stage === 8) {
+                    logger.warn('End-game process started.')
+                    global.endGame = true;
+                }
                 makePages(record, pageId);
             });
 
         } else {
-            if (!global.appStarted) {
-                logger.debug('Page failure due to browser restart.');
-            } else {
-                logger.error(err);
-                pages[pageId].page.close();
-            }
+
+            logger.error(err);
+            pages[pageId].page.close();
+
 
         }
     });

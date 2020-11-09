@@ -2,11 +2,11 @@ const {google} = require('googleapis');
 let privateKey = require("../res/privateKey.json");
 const spreadsheetId = '1LhpqxpRBJeE2ywUZtnkXyLuv74j3yKrM53VAxwDCUSA';
 const phoneNumbers = [simSlots.slot0.phoneNumber, simSlots.slot1.phoneNumber];
-const emails = ['turnmaker@silb.io', 'turnos@silb.io'];//['martinherrmann@yopmail.com', 'martaperezsol@yopmail.com'];
-
+const emails = ['t7aXoTwk@yandex.com', 'd0Mt4lKQ@yandex.com'];
+//XoDNZQ77uslp
+//xQLFTGeSkcg8
 
 function init() {
-    //TODO => Set up listeners to listen for new data and adding it to the probing/hitting systems.
     return new Promise((resolve, reject) => {
         // configure a JWT auth client
             let jwtClient = new google.auth.JWT(
@@ -41,22 +41,29 @@ function populateDataMap(auth) {
                 const rows = res.data.valueRanges[0].values;
                 if (rows.length > 0) {
                     rows.forEach((row, i) => {
-
+for(let cell in row){
+    if(row[cell]){
+        row[cell] = row[cell].trim();
+    }
+    else{
+        row[cell] = '';
+    }
+}
                         returnData.push(
                             {
                                 'nombres': row[0],
                                 'apellido1': row[1],
                                 'apellido2': row[2],
-                                'provincia': row[3],
-                                'tipoTramite': row[4],
-                                'tipoDocumento': row[5],
-                                'numeroDocumento': row[6],
-                                'nacionalidad': row[7],
-                                'caducidadTarjeta': row[8],
+                                'tipoTramite': row[3],
+                                'tipoDocumento': row[4],
+                                'numeroDocumento': row[5],
+                                'nacionalidad': row[6],
+                                'caducidadTarjeta': row[7],
+                                'motivo': row[8],
+                                'anoNacimiento': row[9],
+                                'provincia': row[10],
                                 'telefono': phoneNumbers[i % 2 === 0 ? 0 : 1],
                                 'email': emails[i % 2 === 0 ? 0 : 1],
-                                'motivo': row[10],
-                                'anoNacimiento': row[11],
                                 'dataRow': i + 2,
                                 'simSlot':'slot' + (i % 2 === 0 ? 0 : 1),
                                 'probing': false,

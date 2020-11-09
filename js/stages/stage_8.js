@@ -15,7 +15,7 @@ module.exports = {
                 })
 
 
-            } else if (await pages[pageId].page.$('#datepicker') !== null) {
+            } else if (await pages[pageId].page.$('[id=datepicker]') !== null) {
                 utils.waitForSimLock(record.simSlot).then(async () => {
                     await pages[pageId].page.evaluate(
                         () => {

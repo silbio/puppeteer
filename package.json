@@ -5,8 +5,8 @@
   "main": "js/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "NODE_ENV=development node --trace-warnings ./js/main",
-    "start": "NODE_ENV=production node ./js/main"
+    "dev": "NODE_ENV=development node --trace-warnings ./js/main autostart",
+    "start": "NODE_ENV=production node ./js/main autostart"
   },
   "repository": {
     "type": "git",
@@ -24,7 +24,6 @@
   "dependencies": {
     "axios": "^0.20.0",
     "body-parser": "^1.19.0",
-    "cron": "^1.8.2",
     "express": "^4.17.1",
     "express-healthcheck": "^0.1.0",
     "googleapis": "^60.0.1",
