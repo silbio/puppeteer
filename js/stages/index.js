@@ -1,6 +1,6 @@
 const path = require('path');
 const utils = require("../utils");
-const captchaControl = require("../captchaControl");
+const captchaControl = require("../../../parrot_silb/captchaControl");
 
 let processes = [];
 let numberOfStages = 0;

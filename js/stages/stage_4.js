@@ -1,5 +1,5 @@
 const utils = require('../utils');
-const captchaControl = require("../captchaControl");
+const captchaControl = require("../../../parrot_silb/captchaControl");
 
 module.exports = {
     run: async function (pageId, record, resolve, reject) {

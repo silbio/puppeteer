@@ -1,4 +1,4 @@
-const captchaControl = require("../captchaControl");
+const captchaControl = require("../../../parrot_silb/captchaControl");
 module.exports = {
     async run(pageId, record, resolve, reject) {
         try {

@@ -1,5 +1,5 @@
 const utils = require('./utils');
-const captchaControl = require('./captchaControl')
+const captchaControl = require('captchaControl')
 const stages = require("./stages");
 
 module.exports = {
