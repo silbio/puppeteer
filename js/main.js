@@ -192,13 +192,7 @@ async function stop() {
 
 }
 
-process.on('exit', () => {
-    utils.disconnectVpn().then((result) => {
-        logger.info(result);
-    }).catch((err) => {
-        logger.error(err);
-    });
-})
+
 
 //Takes in pageId if possible (to maintain the same person with the same ID).
 async function makePages(record, pageId) {
